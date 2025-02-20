@@ -103,7 +103,8 @@ namespace mapa_back.Services
 				school.LiczbaUczniow = schoolFromApi.LiczbaUczniow;
 				school.KategoriaUczniow = schoolFromApi.KategoriaUczniow?.Nazwa;
 				school.SpecyfikaSzkoly = schoolFromApi.SpecyfikaSzkoly?.Nazwa;
-                school.PodmiotProwadzacy = JsonSerializer.Serialize(schoolFromApi.PodmiotProwadzacy);
+                school.PodmiotProwadzacyTyp = schoolFromApi.PodmiotProwadzacy?[0].Typ.Nazwa;
+                school.PodmiotProwadzacyNazwa = schoolFromApi.PodmiotProwadzacy?[0].Nazwa;
             }
             catch(Exception)
             {

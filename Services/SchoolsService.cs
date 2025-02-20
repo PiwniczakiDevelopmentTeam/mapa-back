@@ -123,8 +123,9 @@ namespace mapa_back.Services
 					LiczbaUczniow = item.LiczbaUczniow,
 					KategoriaUczniow = item.KategoriaUczniow,
 					SpecyfikaSzkoly = item.SpecyfikaSzkoly,
-					PodmiotProwadzacy = item.PodmiotProwadzacy,
-				}).ToList();
+					PodmiotProwadzacyTyp = item.PodmiotProwadzacyTyp,
+                    PodmiotProwadzacyNazwa = item.PodmiotProwadzacyNazwa
+                }).ToList();
 				if (schools.Any())
 				{
 					await _dbContext.Schools.AddRangeAsync(schools);
@@ -196,15 +197,6 @@ namespace mapa_back.Services
                             }
                             else
                             {
-								var podmiotProwadzacySchool = string.IsNullOrEmpty(school.PodmiotProwadzacy)
-	                                ? new List<PodmiotProwadzacy>()
-	                                : JsonConvert.DeserializeObject<List<PodmiotProwadzacy>>(school.PodmiotProwadzacy);
-
-								var podmiotProwadzacyElement = string.IsNullOrEmpty(element.PodmiotProwadzacy)
-									? new List<PodmiotProwadzacy>()
-									: JsonConvert.DeserializeObject<List<PodmiotProwadzacy>>(element.PodmiotProwadzacy);
-
-                                bool isPodmiotProwadzacySame = IsPodmiotProwadzacySame(podmiotProwadzacySchool, podmiotProwadzacyElement);
 								bool isDifferent =
                                     school.Geography.X != element.Geography.X ||
                                     school.Geography.Y != element.Geography.Y ||
@@ -234,7 +226,8 @@ namespace mapa_back.Services
                                     school.LiczbaUczniow != element.LiczbaUczniow ||
                                     school.KategoriaUczniow != element.KategoriaUczniow ||
                                     school.SpecyfikaSzkoly != element.SpecyfikaSzkoly ||
-									!isPodmiotProwadzacySame;
+                                    school.PodmiotProwadzacyTyp != element.PodmiotProwadzacyTyp ||
+                                    school.PodmiotProwadzacyNazwa != element.PodmiotProwadzacyNazwa;
 
                                 if (isDifferent)
                                 {
@@ -258,34 +251,6 @@ namespace mapa_back.Services
                 throw new DatabaseException("An unexpected error occurred while trying to get data from database");
             }
             
-        }
-        private bool IsPodmiotProwadzacySame(List<PodmiotProwadzacy> podmiotOld, List<PodmiotProwadzacy> podmiotNew)
-        {
-			if (podmiotOld.Count != podmiotNew.Count)
-				return false;
-            if (podmiotOld == null && podmiotNew == null) return true;
-			foreach (var elementOld in podmiotOld)
-            {
-                var elementNew = podmiotNew.FirstOrDefault(x => x.Id == elementOld.Id);
-                if (elementNew == null) return false;
-
-                if(elementOld.Nazwa != elementNew.Nazwa)
-                {
-                    return false;
-                }
-                if(elementOld.Typ == null && elementNew.Typ != null || elementOld.Typ != null && elementNew.Typ == null)
-                {
-					return false;
-				}
-                if(elementOld.Typ != null && elementNew.Typ != null)
-                {
-                    if(elementOld.Typ.Nazwa != elementNew.Typ.Nazwa || elementOld.Typ.Id  != elementNew.Typ.Id)
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
         }
 
 		public async Task<ChangedSchool> GetSingleChangedSchool(int id)

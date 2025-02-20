@@ -41,10 +41,9 @@ namespace mapa_back.Mappers
 				LiczbaUczniow = school.LiczbaUczniow,
 				KategoriaUczniow = school.KategoriaUczniow,
 				SpecyfikaSzkoly = school.SpecyfikaSzkoly,
-				PodmiotProwadzacy = school.PodmiotProwadzacy != null
-					? JsonConvert.DeserializeObject<List<PodmiotProwadzacy>>(school.PodmiotProwadzacy)
-					: null,
-				Geography = MapGeographyToDTO(school.Geography)
+				PodmiotProwadzacyTyp = school.PodmiotProwadzacyTyp,
+                PodmiotProwadzacyNazwa = school.PodmiotProwadzacyNazwa,
+                Geography = MapGeographyToDTO(school.Geography)
 			};
 		}
 
@@ -80,10 +79,9 @@ namespace mapa_back.Mappers
                 LiczbaUczniow = school.LiczbaUczniow,
                 KategoriaUczniow = school.KategoriaUczniow,
                 SpecyfikaSzkoly = school.SpecyfikaSzkoly,
-                PodmiotProwadzacy = school.PodmiotProwadzacy != null
-					? JsonConvert.DeserializeObject<List<PodmiotProwadzacy>>(school.PodmiotProwadzacy)
-					: null,
-				Geography = MapGeographyToDTO(school.Geography)
+                PodmiotProwadzacyTyp = school.PodmiotProwadzacyTyp,
+                PodmiotProwadzacyNazwa = school.PodmiotProwadzacyNazwa,
+                Geography = MapGeographyToDTO(school.Geography)
             };
 		}
 
@@ -130,8 +128,9 @@ namespace mapa_back.Mappers
 				LiczbaUczniow = school.LiczbaUczniow,
 				KategoriaUczniow = school.KategoriaUczniow,
 				SpecyfikaSzkoly = school.SpecyfikaSzkoly,
-				PodmiotProwadzacy = JsonConvert.SerializeObject(school.PodmiotProwadzacy),
-				Geography = MapToGeography(school.Geography)
+                PodmiotProwadzacyTyp = school.PodmiotProwadzacyTyp,
+                PodmiotProwadzacyNazwa = school.PodmiotProwadzacyNazwa,
+                Geography = MapToGeography(school.Geography)
 			};
 		}
 
