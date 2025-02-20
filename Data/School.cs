@@ -121,7 +121,12 @@ namespace mapa_back.Models
         [MaxLength(64)]
         public string? SpecyfikaSzkoly { get; set; }
 
-        [Column("podmiot_prowadzacy",TypeName = "jsonb")]
-        public string? PodmiotProwadzacy { get; set; }
+        [Column("podmiot_prowadzacy_typ")]
+        [MaxLength(64)]
+        public string? PodmiotProwadzacyTyp { get; set; }
+
+        [Column("podmiot_prowadzacy_nazwa")]
+        [MaxLength(64)]
+        public string? PodmiotProwadzacyNazwa { get; set; }
     }
 }
