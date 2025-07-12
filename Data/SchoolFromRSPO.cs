@@ -2,6 +2,6 @@
 
 namespace mapa_back.Models
 {
-    [Table("rspo_cache")]
-    public class SchoolFromRSPO : School { }
+	[Table("rspo_cache")]
+	public class SchoolFromRSPO : School { }
 }
