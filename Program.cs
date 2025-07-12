@@ -9,8 +9,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
-using AutoMapper.Configuration.Annotations;
-using Swashbuckle.AspNetCore.Filters;
+using System.Text.Json.Serialization;
+using NetTopologySuite.IO.Converters;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +18,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 Env.Load();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+	.AddJsonOptions(options =>
+	{
+		options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+        options.JsonSerializerOptions.Converters.Add(
+			new GeoJsonConverterFactory());
+	});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

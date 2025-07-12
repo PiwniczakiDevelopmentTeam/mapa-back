@@ -1,4 +1,5 @@
 ﻿using mapa_back.Data;
+using mapa_back.Data.RSPOApi;
 using mapa_back.Exceptions;
 using mapa_back.Mappers;
 using mapa_back.Models;
@@ -33,8 +34,8 @@ namespace mapa_back.Controllers
         {
             try
             {
-                await rSPOApiService.SyncDataFromRSPOApi();
-                return StatusCode(StatusCodes.Status200OK);
+                SyncResponse response = await rSPOApiService.SyncDataFromRSPOApi();
+                return StatusCode(StatusCodes.Status200OK,response);
             }
             catch(RSPOToDatabaseException ex)
             {
@@ -73,17 +74,17 @@ namespace mapa_back.Controllers
             }
         }
 
-        [HttpGet("GetSchoolPage")]
+        [HttpPost("GetSchoolPage")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
-        public async Task<ActionResult<List<SchoolDTO>>> GetSchoolPage(int size, int pageNumber)
+        public async Task<ActionResult<List<SchoolDTO>>> GetSchoolPage(int size, int pageNumber, List<FilterParams>? filters = null)
         {
             try
             {
-                List<SchoolDTO> schoolsPage = await schoolsService.GetSchoolsPage(size, pageNumber);
+                List<SchoolDTO> schoolsPage = await schoolsService.GetSchoolsPage(size, pageNumber, filters);
                 if (schoolsPage.Count > 0)
                 {
                     return Ok(schoolsPage);
@@ -172,7 +173,7 @@ namespace mapa_back.Controllers
             try
             {
 				ChangedSchoolsResponse response = await schoolsService.GetChangedSchoolsList(size, page);
-                if (response.ChangedSchools.Any() || response.CorruptedRSPO.Any())
+                if (response.ChangedSchools.Any() || response.NewSchools.Any() || response.NotExistingSchools.Any())
                 {
                     return Ok(response);
                 }
@@ -440,15 +441,13 @@ namespace mapa_back.Controllers
 			}
 		}
 
-		/*
-		 * Odkomentowac tylko do przekopiowania danych
-		 * 
-		[HttpGet("SchoolsFromRspoTableToSchoolMapTable")]
-        public async Task<ActionResult<bool>> SchoolsFromRspoTableToSchoolMapTable()
+
+		[HttpGet("CopySchools")]
+        public async Task<ActionResult<bool>> CopySchools()
         {
-            var result = await schoolsService.AddSchoolsFromRSPOTableToMapSchoolTable();
-            return Ok(result);
+            await schoolsService.AddSchoolsFromRSPOTableToMapSchoolTable();
+            return Ok();
         }
-		*/
+		
 	}
 }

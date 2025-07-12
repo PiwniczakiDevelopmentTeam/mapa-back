@@ -1,7 +1,9 @@
-﻿namespace mapa_back.Services
+﻿using mapa_back.Data.RSPOApi;
+
+namespace mapa_back.Services
 {
     public interface IRSPOApiService
     {
-        Task SyncDataFromRSPOApi();
+        Task<SyncResponse> SyncDataFromRSPOApi();
     }
 }

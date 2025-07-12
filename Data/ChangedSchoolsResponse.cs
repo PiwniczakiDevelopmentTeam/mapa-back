@@ -5,6 +5,9 @@ namespace mapa_back.Data
 	public class ChangedSchoolsResponse
 	{
 		public List<ChangedSchool> ChangedSchools { get; set; }
+
+		public List<School> NewSchools { get; set; }
+		public List<School> NotExistingSchools { get; set; }
 		public List<int> CorruptedRSPO { get; set; }
 
 		public ChangedSchoolsResponse()
@@ -13,6 +16,6 @@ namespace mapa_back.Data
 			CorruptedRSPO = new List<int>();
 		}
 
-		public long schoolsCount { get; set; }
+		public long SchoolsCount { get; set; }
 	}
 }

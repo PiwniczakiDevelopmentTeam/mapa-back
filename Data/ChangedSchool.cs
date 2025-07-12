@@ -4,10 +4,10 @@ namespace mapa_back.Models
 {
     public class ChangedSchool
     {
-        public SchoolDTO SchoolBeforeChanges { get; set; }
-        public SchoolDTO SchoolsAfterChanges { get; set; }
+        public School SchoolBeforeChanges { get; set; }
+        public School SchoolsAfterChanges { get; set; }
 
-        public ChangedSchool(SchoolDTO schoolBeforeChanges, SchoolDTO schoolAfterChanges)
+        public ChangedSchool(School schoolBeforeChanges, School schoolAfterChanges)
         {
             this.SchoolBeforeChanges = schoolBeforeChanges;
             this.SchoolsAfterChanges = schoolAfterChanges;

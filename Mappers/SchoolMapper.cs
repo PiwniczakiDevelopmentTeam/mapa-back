@@ -42,7 +42,7 @@ namespace mapa_back.Mappers
 				KategoriaUczniow = school.KategoriaUczniow,
 				SpecyfikaSzkoly = school.SpecyfikaSzkoly,
 				PodmiotProwadzacyTyp = school.PodmiotProwadzacyTyp,
-                PodmiotProwadzacyNazwa = school.PodmiotProwadzacyNazwa,
+                PodmiotProwadzacyNazwa = school.PodmiotProwadzacy,
                 Geography = MapGeographyToDTO(school.Geography)
 			};
 		}
@@ -80,7 +80,7 @@ namespace mapa_back.Mappers
                 KategoriaUczniow = school.KategoriaUczniow,
                 SpecyfikaSzkoly = school.SpecyfikaSzkoly,
                 PodmiotProwadzacyTyp = school.PodmiotProwadzacyTyp,
-                PodmiotProwadzacyNazwa = school.PodmiotProwadzacyNazwa,
+                PodmiotProwadzacyNazwa = school.PodmiotProwadzacy,
                 Geography = MapGeographyToDTO(school.Geography)
             };
 		}
@@ -129,7 +129,7 @@ namespace mapa_back.Mappers
 				KategoriaUczniow = school.KategoriaUczniow,
 				SpecyfikaSzkoly = school.SpecyfikaSzkoly,
                 PodmiotProwadzacyTyp = school.PodmiotProwadzacyTyp,
-                PodmiotProwadzacyNazwa = school.PodmiotProwadzacyNazwa,
+                PodmiotProwadzacy = school.PodmiotProwadzacyNazwa,
                 Geography = MapToGeography(school.Geography)
 			};
 		}

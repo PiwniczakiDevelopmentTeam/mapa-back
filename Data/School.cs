@@ -4,7 +4,6 @@ using NetTopologySuite.Geometries;
 
 namespace mapa_back.Models
 {
-	[Table("private_schools")]
 	public class School
     {
         [Key]
@@ -121,12 +120,54 @@ namespace mapa_back.Models
         [MaxLength(64)]
         public string? SpecyfikaSzkoly { get; set; }
 
-        [Column("podmiot_prowadzacy_typ")]
-        [MaxLength(64)]
-        public string? PodmiotProwadzacyTyp { get; set; }
+        [Column("podmiot_prowadzacy")]
+        public string? PodmiotProwadzacy { get; set; }
 
-        [Column("podmiot_prowadzacy_nazwa")]
-        [MaxLength(64)]
-        public string? PodmiotProwadzacyNazwa { get; set; }
-    }
+		[Column("podmiot_prowadzacy_typ")]
+		public string? PodmiotProwadzacyTyp { get; set; }
+
+
+		public override bool Equals(object? obj)
+		{
+			if (obj is not School other) return false;
+
+			return NumerRspo == other.NumerRspo &&
+				   (Geography?.EqualsExact(other.Geography) ?? other.Geography is null) &&
+				   Typ == other.Typ &&
+				   StatusPublicznoPrawny == other.StatusPublicznoPrawny &&
+				   Nazwa == other.Nazwa &&
+				   Wojewodztwo == other.Wojewodztwo &&
+				   Gmina == other.Gmina &&
+				   Powiat == other.Powiat &&
+				   Miejscowosc == other.Miejscowosc &&
+				   GminaRodzaj == other.GminaRodzaj &&
+				   KodPocztowy == other.KodPocztowy &&
+				   Ulica == other.Ulica &&
+				   NumerBudynku == other.NumerBudynku &&
+				   NumerLokalu == other.NumerLokalu &&
+				   Email == other.Email &&
+				   Telefon == other.Telefon &&
+				   StronaInternetowa == other.StronaInternetowa &&
+				   DyrektorImie == other.DyrektorImie &&
+				   DyrektorNazwisko == other.DyrektorNazwisko &&
+				   Nip == other.Nip &&
+				   Regon == other.Regon &&
+				   DataRozpoczecia == other.DataRozpoczecia &&
+				   DataZalozenia == other.DataZalozenia &&
+				   DataZakonczenia == other.DataZakonczenia &&
+				   DataLikwidacji == other.DataLikwidacji &&
+				   LiczbaUczniow == other.LiczbaUczniow &&
+				   KategoriaUczniow == other.KategoriaUczniow &&
+				   SpecyfikaSzkoly == other.SpecyfikaSzkoly &&
+				   PodmiotProwadzacy == other.PodmiotProwadzacy &&
+				   PodmiotProwadzacyTyp == other.PodmiotProwadzacyTyp;
+		}
+
+		public override int GetHashCode()
+		{
+			return NumerRspo.GetHashCode();
+		}
+
+	}
+
 }

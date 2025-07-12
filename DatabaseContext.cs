@@ -12,7 +12,7 @@ namespace mapa_back
         public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options) { }
 
         public DbSet<SchoolFromRSPO> SchoolsFromRSPO { get; set; }
-        public DbSet<School> Schools { get; set; }
+        public DbSet<SchoolActual> SchoolsActual { get; set; }
 
         public DbSet<User> Users { get; set; }
     }

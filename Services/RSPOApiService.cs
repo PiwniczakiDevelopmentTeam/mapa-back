@@ -1,8 +1,10 @@
-﻿using mapa_back.Exceptions;
+﻿using mapa_back.Data.RSPOApi;
+using mapa_back.Exceptions;
 using mapa_back.Models;
 using mapa_back.Models.RSPOApi;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
+using System;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -62,11 +64,13 @@ namespace mapa_back.Services
                 throw new RSPOToDatabaseException("Unexpected error occurred while trying to GetSchoolsFromResponse JSON");
             }
         }
-        private async Task SaveSingleSchoolToDatabase(Point geography, SchoolApi schoolFromApi)
+        private async Task SaveSingleSchoolToDatabase(Point geography, SchoolApi schoolFromApi, List<int> invalidRspoNumbers, List<string> exceptions)
         {
-            try
+            SchoolFromRSPO? school = new SchoolFromRSPO();
+
+			try
             {
-				SchoolFromRSPO? school = await _dbContext.SchoolsFromRSPO.FirstOrDefaultAsync(element => element.NumerRspo == schoolFromApi.NumerRspo);
+				school = await _dbContext.SchoolsFromRSPO.FirstOrDefaultAsync(element => element.NumerRspo == schoolFromApi.NumerRspo);
 
                 if(school == null)
                 {
@@ -103,13 +107,14 @@ namespace mapa_back.Services
 				school.LiczbaUczniow = schoolFromApi.LiczbaUczniow;
 				school.KategoriaUczniow = schoolFromApi.KategoriaUczniow?.Nazwa;
 				school.SpecyfikaSzkoly = schoolFromApi.SpecyfikaSzkoly?.Nazwa;
-                school.PodmiotProwadzacyTyp = schoolFromApi.PodmiotProwadzacy?[0].Typ.Nazwa;
-                school.PodmiotProwadzacyNazwa = schoolFromApi.PodmiotProwadzacy?[0].Nazwa;
-            }
-            catch(Exception)
+                school.PodmiotProwadzacy = schoolFromApi.PodmiotProwadzacy?.First().Nazwa;
+				school.PodmiotProwadzacyTyp = schoolFromApi.PodmiotProwadzacy?.First().Typ?.Nazwa;
+			}
+            catch(Exception ex)
             {
-                throw new RSPOToDatabaseException("Unexpected error occurred while trying to save single school data to database");
-            }
+                invalidRspoNumbers.Add(school.NumerRspo);
+                exceptions.Add(ex.Message);
+			}
         }
 		private DateOnly? ParseDate(string? dateString)
 		{
@@ -119,12 +124,12 @@ namespace mapa_back.Services
 			}
 			return null;
 		}
-		private async Task SaveSchoolsToDatabase(List<SchoolApi> schools)
+		private async Task SaveSchoolsToDatabase(List<SchoolApi> schools,List<int> invalidRspoNumbers, List<string> exceptions)
         {
             foreach (var school in schools)
             {
                 Point point = new Point(new Coordinate { X = school.Geolokalizacja.Longitude, Y = school.Geolokalizacja.Latitude });
-                await SaveSingleSchoolToDatabase(point, school);
+                await SaveSingleSchoolToDatabase(point, school, invalidRspoNumbers, exceptions);
             }
             try
             {
@@ -137,9 +142,12 @@ namespace mapa_back.Services
 			GC.Collect();
             GC.WaitForPendingFinalizers();
         }
-        public async Task SyncDataFromRSPOApi()
+        public async Task<SyncResponse> SyncDataFromRSPOApi()
         {
-            string url = "https://api-rspo.men.gov.pl/api/placowki/?page=1";
+            SyncResponse syncResponse = new SyncResponse();
+			List<int> invalidRspoNumbers = new List<int>();
+			List<string> exceptions = new List<string>();
+			string url = "https://api-rspo.men.gov.pl/api/placowki/?page=1";
             int numberOfPages = 0;
             try
             {
@@ -164,8 +172,8 @@ namespace mapa_back.Services
                         response.EnsureSuccessStatusCode();
                         string responseBody = await response.Content.ReadAsStringAsync();
                         List<SchoolApi> schools = GetSchoolsFromResponse(responseBody);
-                        await SaveSchoolsToDatabase(schools);
-                    }
+                        await SaveSchoolsToDatabase(schools,invalidRspoNumbers,exceptions);
+					}
                 }
                 catch(RSPOToDatabaseException)
                 {
@@ -176,8 +184,11 @@ namespace mapa_back.Services
                     throw new RSPOToDatabaseException("Unexpected error occurred while trying to get data from RSPO API");
                 }
                 Console.WriteLine($"Readed page nr {i}");
-            }     
-        }
+            }
+			syncResponse.RspoNumber = invalidRspoNumbers;
+			syncResponse.Exception = exceptions;
+            return syncResponse;
+		}
         
     }
 }
