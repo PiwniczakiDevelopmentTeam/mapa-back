@@ -18,36 +18,44 @@ namespace mapa_back.Controllers
     {
         private readonly IRSPOApiService rSPOApiService;
         private readonly ISchoolsService schoolsService;
-        public SchoolsController(DatabaseContext context, IRSPOApiService apiService, ISchoolsService schoolsService)
+		private readonly IServiceProvider serviceProvider;
+		private readonly RSPOProgressTracker progressTracker;
+        public SchoolsController(DatabaseContext context, IRSPOApiService apiService, ISchoolsService schoolsService, RSPOProgressTracker progressTracker, IServiceProvider serviceProvider)
         {
             rSPOApiService = apiService;
             this.schoolsService = schoolsService;
-        }
+			this.progressTracker = progressTracker;
+			this.serviceProvider = serviceProvider;
+		}
 
         [HttpGet("GetDataFromRSPO")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
         public async Task<ActionResult> GetDataFromRSPO()
         {
-            try
-            {
-                SyncResponse response = await rSPOApiService.SyncDataFromRSPOApi();
-                return StatusCode(StatusCodes.Status200OK,response);
-            }
-            catch(RSPOToDatabaseException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to sync data from RSPO API");
-            }
-        }
+			_ = Task.Run(async () =>
+			{
+				using var scope = serviceProvider.CreateScope();
+				var scopedService = scope.ServiceProvider.GetRequiredService<IRSPOApiService>();
+				await scopedService.SyncDataFromRSPOApi(); // teraz wszystko działa w nowym scope
+			});
+			return Ok(new { message = "RSPO background sync started" });
+		}
 
-        [HttpGet("GetSchoolsCount")]
+		[HttpGet("GetRSPOBackgroundSyncProgress")]
+		public ActionResult GetRSPOBackgroundSyncProgress()
+		{
+			return Ok(new
+			{
+				actualPage = progressTracker.CurrentPage,
+				maxPage = progressTracker.MaxPage,
+				isSyncInProgress = progressTracker.IsSyncInProgress,
+				invalidRspoNumbers = progressTracker.InvalidRspoNumbers,
+				exceptions = progressTracker.Exceptions
+			});
+		}
+
+		[HttpGet("GetSchoolsCount")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

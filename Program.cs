@@ -11,6 +11,7 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
 using NetTopologySuite.IO.Converters;
+using mapa_back.Data.RSPOApi;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,6 +75,7 @@ builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(conn
 builder.Services.AddScoped<IRSPOApiService, RSPOApiService>();
 builder.Services.AddScoped<ISchoolsService, SchoolsService>();
 builder.Services.AddScoped<IUsersService,  UsersService>();
+builder.Services.AddSingleton<RSPOProgressTracker>();
 builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddTransient<JwtMiddleware>();
 builder.Services.AddHttpClient();

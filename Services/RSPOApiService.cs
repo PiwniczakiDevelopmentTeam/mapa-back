@@ -14,10 +14,13 @@ namespace mapa_back.Services
     {
         private readonly DatabaseContext _dbContext;
         private readonly HttpClient _httpClient;
-        public RSPOApiService(DatabaseContext dbContext, HttpClient httpClient)
+		private readonly RSPOProgressTracker _progressTracker;
+
+		public RSPOApiService(DatabaseContext dbContext, HttpClient httpClient, RSPOProgressTracker progressTracker)
         {
             _dbContext = dbContext;
             _httpClient = httpClient;
+            _progressTracker = progressTracker;
         }
         
 
@@ -142,9 +145,16 @@ namespace mapa_back.Services
 			GC.Collect();
             GC.WaitForPendingFinalizers();
         }
-        public async Task<SyncResponse> SyncDataFromRSPOApi()
+        public async Task SyncDataFromRSPOApi()
         {
-            SyncResponse syncResponse = new SyncResponse();
+			if (_progressTracker.IsSyncInProgress) return;
+
+			_progressTracker.IsSyncInProgress = true;
+			_progressTracker.CurrentPage = 0;
+			_progressTracker.MaxPage = 0;
+            _progressTracker.InvalidRspoNumbers = new List<int>();
+            _progressTracker.Exceptions = new List<string>();
+
 			List<int> invalidRspoNumbers = new List<int>();
 			List<string> exceptions = new List<string>();
 			string url = "https://api-rspo.men.gov.pl/api/placowki/?page=1";
@@ -156,38 +166,37 @@ namespace mapa_back.Services
                     response.EnsureSuccessStatusCode();
                     string responseBody = await response.Content.ReadAsStringAsync();
                     numberOfPages = GetNumberOfPages(responseBody);
+                    _progressTracker.MaxPage = numberOfPages;
                 }
-            }
-            catch (Exception)
-            {
-                throw new RSPOToDatabaseException("Unexpected error occurred while trying to get data from RSPO API. Check if RSPO Api changed URL");
-            }
-            for (int i = 1; i <= numberOfPages; i++)
-            {
-                try
+
+                for (int i = 1; i <= numberOfPages; i++)
                 {
-                    url = $"https://api-rspo.men.gov.pl/api/placowki/?page={i}";
-                    using (HttpResponseMessage response = await _httpClient.GetAsync(url,HttpCompletionOption.ResponseHeadersRead))
+					_progressTracker.CurrentPage = i;
+					url = $"https://api-rspo.men.gov.pl/api/placowki/?page={i}";
+                    using (HttpResponseMessage response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
                     {
                         response.EnsureSuccessStatusCode();
                         string responseBody = await response.Content.ReadAsStringAsync();
                         List<SchoolApi> schools = GetSchoolsFromResponse(responseBody);
-                        await SaveSchoolsToDatabase(schools,invalidRspoNumbers,exceptions);
-					}
+                        await SaveSchoolsToDatabase(schools, invalidRspoNumbers, exceptions);
+                    }
+                    Console.WriteLine($"Readed page nr {i}");
                 }
-                catch(RSPOToDatabaseException)
-                {
-                    throw;
-                }
-                catch(Exception)
-                {
-                    throw new RSPOToDatabaseException("Unexpected error occurred while trying to get data from RSPO API");
-                }
-                Console.WriteLine($"Readed page nr {i}");
+				_progressTracker.InvalidRspoNumbers = invalidRspoNumbers;
+				_progressTracker.Exceptions = exceptions;
             }
-			syncResponse.RspoNumber = invalidRspoNumbers;
-			syncResponse.Exception = exceptions;
-            return syncResponse;
+			catch (RSPOToDatabaseException ex)
+			{
+                _progressTracker.Exceptions.Add(ex.Message);
+			}
+			catch (Exception)
+			{
+				_progressTracker.Exceptions.Add("Unexpected error occurred while trying to get data from RSPO API");
+			}
+            finally
+            {
+                _progressTracker.IsSyncInProgress = false;
+			}
 		}
         
     }
