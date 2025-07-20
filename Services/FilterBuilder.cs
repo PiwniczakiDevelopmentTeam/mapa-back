@@ -1,5 +1,6 @@
 ﻿using mapa_back.Data;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace mapa_back.Services
 {
@@ -9,17 +10,44 @@ namespace mapa_back.Services
 		{
 			foreach (var filter in filters)
 			{
-				if (filter.value == null) continue;
+				if (string.IsNullOrWhiteSpace(filter.field) || filter.value == null)
+					continue;
 
 				var parameter = Expression.Parameter(typeof(T), "x");
-				var property = Expression.Property(parameter, filter.field);
-				if(property == null) continue;
-				var constant = Expression.Constant(filter.value);
 
-				var equals = Expression.Equal(property, constant);
+				var propertyInfo = typeof(T).GetProperty(filter.field, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+				if (propertyInfo == null)
+					continue;
 
-				var lambda = Expression.Lambda<Func<T, bool>>(equals, parameter);
+				var property = Expression.Property(parameter, propertyInfo);
+				Expression? comparison;
 
+				if (propertyInfo.PropertyType == typeof(string))
+				{
+					var toLower = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes);
+					var left = Expression.Call(property, toLower!);
+					var right = Expression.Constant(filter.value.ToString()!.ToLower());
+
+					var notNull = Expression.NotEqual(property, Expression.Constant(null, typeof(string)));
+					var equal = Expression.Equal(left, right);
+
+					comparison = Expression.AndAlso(notNull, equal);
+				}
+				else
+				{
+					try
+					{
+						var typedValue = Convert.ChangeType(filter.value, propertyInfo.PropertyType);
+						var constant = Expression.Constant(typedValue);
+						comparison = Expression.Equal(property, constant);
+					}
+					catch
+					{
+						continue;
+					}
+				}
+
+				var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
 				query = query.Where(lambda);
 			}
 
