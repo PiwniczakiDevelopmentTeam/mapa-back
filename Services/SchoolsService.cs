@@ -1,5 +1,4 @@
 ﻿using mapa_back.Data;
-using mapa_back.Data.RSPOApi.PodmiotProwadzacy;
 using mapa_back.Exceptions;
 using mapa_back.Mappers;
 using mapa_back.Models;
@@ -196,7 +195,17 @@ namespace mapa_back.Services
             }
             
         }
+		public async Task<SchoolDTO> GetSingleSchool(int id)
+        {
+			if (id <= 0)
+			{
+				throw new ArgumentException("Id has to be higher than 0");
+			}
 
+			School? singleSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(s => s.Id == id);
+            if (singleSchool == null) return null;
+            return SchoolMapper.MapToDTO(singleSchool);
+		}
 		public async Task<ChangedSchool> GetSingleChangedSchool(int id)
         {
             if(id <= 0)

@@ -82,7 +82,26 @@ namespace mapa_back.Controllers
             }
         }
 
-        [HttpPost("GetSchoolPage")]
+		[HttpPost("GetSingleSchool")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+
+		public async Task<ActionResult<SchoolDTO>> GetSingleSchool(int id)
+		{
+			try
+			{
+				SchoolDTO singleSchool = await schoolsService.GetSingleSchool(id);
+				return singleSchool == null ? NotFound() : Ok(singleSchool);
+			}
+			catch (Exception)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to get single school from database. Try again later");
+			}
+		}
+
+		[HttpPost("GetSchoolPage")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
