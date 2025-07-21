@@ -1,4 +1,5 @@
 ﻿using mapa_back.Data;
+using mapa_back.Data.DTO;
 using mapa_back.Exceptions;
 using mapa_back.Mappers;
 using mapa_back.Models;
@@ -36,26 +37,29 @@ namespace mapa_back.Services
             }
             return true;
         }
-        public async Task<List<SchoolDTO>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null)
+        public async Task<PagedResult<School>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null)
         {
             if (!ValidatePageParametres(pageNumber, size))
             {
                 throw new ArgumentException("Parametres not valid");
             }
-            try
-            {
+			try
+			{
 				IQueryable<School> query = _dbContext.SchoolsActual;
 				if (filters != null)
-                {
-                    query = FilterBuilder.ApplyFilters(query, filters);
+				{
+					query = FilterBuilder.ApplyFilters(query, filters);
 				}
-				List<School> schoolsPage = await query.Where(p => true).Skip((pageNumber -1) * size).Take(size).ToListAsync();
-                List<SchoolDTO> schoolsDTO = new List<SchoolDTO>();
-                foreach(var element in schoolsPage)
-                {
-                    schoolsDTO.Add(SchoolMapper.MapToDTO(element));
-                }
-				return schoolsPage.Select(SchoolMapper.MapToDTO).ToList();
+				int totalCount = await query.CountAsync();
+				List<School> schoolsPage = await query.Where(p => true).Skip((pageNumber - 1) * size).Take(size).ToListAsync();
+
+				PagedResult<School> result = new PagedResult<School>
+				{
+					Items = schoolsPage,
+					TotalCount = totalCount
+				};
+
+				return result;
 			}
 			catch (SchoolServiceException)
             {

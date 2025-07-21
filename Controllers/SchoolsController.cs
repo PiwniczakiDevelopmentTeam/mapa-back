@@ -1,4 +1,5 @@
 ﻿using mapa_back.Data;
+using mapa_back.Data.DTO;
 using mapa_back.Data.RSPOApi;
 using mapa_back.Exceptions;
 using mapa_back.Mappers;
@@ -107,12 +108,12 @@ namespace mapa_back.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
-        public async Task<ActionResult<List<SchoolDTO>>> GetSchoolPage(int size, int pageNumber, List<FilterParams>? filters = null)
+        public async Task<ActionResult<PagedResult<School>>> GetSchoolPage(int size, int pageNumber, List<FilterParams>? filters = null)
         {
             try
             {
-                List<SchoolDTO> schoolsPage = await schoolsService.GetSchoolsPage(size, pageNumber, filters);
-                if (schoolsPage.Count > 0)
+				PagedResult<School> schoolsPage = await schoolsService.GetSchoolsPage(size, pageNumber, filters);
+                if (schoolsPage.Items.Count > 0)
                 {
                     return Ok(schoolsPage);
                 }

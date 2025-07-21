@@ -1,4 +1,5 @@
 ﻿using mapa_back.Data;
+using mapa_back.Data.DTO;
 using mapa_back.Models;
 using mapa_back.Models.DTO;
 
@@ -6,8 +7,8 @@ namespace mapa_back.Services
 {
     public interface ISchoolsService
     {
-        Task<List<SchoolDTO>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null);
-        Task<SchoolDTO> GetSingleSchool(int id);
+        Task<PagedResult<School>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null);
+		Task<SchoolDTO> GetSingleSchool(int id);
 		Task DeleteSingleSchool(int id);
         Task DeleteManySchools(List<int> ids);
         Task<ChangedSchoolsResponse> GetChangedSchoolsList(int size, int pageNumber);
