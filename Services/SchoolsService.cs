@@ -173,8 +173,8 @@ namespace mapa_back.Services
                 List<School> differentNewSchools = currentSchools.Except(archivedSchools).ToList();
                 List<School> differentArchivedSchools = archivedSchools.Except(currentSchools).ToList();
 
-				List<School> newSchools = differentNewSchools.Where(x => !differentArchivedSchools.Any(archived => archived.NumerRspo == x.NumerRspo)).ToList();
-				List<School> notExistingSchools = differentArchivedSchools.Where(x => !differentNewSchools.Any(newSchool => newSchool.NumerRspo == x.NumerRspo)).ToList();
+				List<School> notExistingSchools = differentNewSchools.Where(x => !differentArchivedSchools.Any(archived => archived.NumerRspo == x.NumerRspo)).ToList();
+				List<School> newSchools = differentArchivedSchools.Where(x => !differentNewSchools.Any(newSchool => newSchool.NumerRspo == x.NumerRspo)).ToList();
 
                 List<School> differentSchools = differentNewSchools.Where(x => differentArchivedSchools.Any(archived => archived.NumerRspo == x.NumerRspo)).ToList();
 				Dictionary<int, School> archivedDict = archivedSchools.ToDictionary(s => s.NumerRspo);
