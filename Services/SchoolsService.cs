@@ -253,7 +253,7 @@ namespace mapa_back.Services
             }
             try
             {
-                _dbContext.Add(school);
+                _dbContext.SchoolsActual.Add(new SchoolActual(school));
                 await _dbContext.SaveChangesAsync();
                 return true;
             }
@@ -277,7 +277,7 @@ namespace mapa_back.Services
 			{
                 foreach(var school in schools)
                 {
-					_dbContext.Add(school);
+					_dbContext.SchoolsActual.Add(new SchoolActual(school));
 				}
                 await _dbContext.SaveChangesAsync();
 				return true;
