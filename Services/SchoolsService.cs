@@ -210,6 +210,18 @@ namespace mapa_back.Services
             if (singleSchool == null) return null;
             return SchoolMapper.MapToDTO(singleSchool);
 		}
+
+		public async Task<SchoolDTO> GetSingleSchoolFromRSPO(int rspoId)
+		{
+			if (rspoId <= 0)
+			{
+				throw new ArgumentException("Id has to be higher than 0");
+			}
+
+			School? singleSchool = await _dbContext.SchoolsFromRSPO.FirstOrDefaultAsync(s => s.NumerRspo == rspoId);
+			if (singleSchool == null) return null;
+			return SchoolMapper.MapToDTO(singleSchool);
+		}
 		public async Task<ChangedSchool> GetSingleChangedSchool(int rspoId)
         {
             if(rspoId <= 0)

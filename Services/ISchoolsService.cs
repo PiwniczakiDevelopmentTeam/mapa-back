@@ -9,6 +9,7 @@ namespace mapa_back.Services
     {
         Task<PagedResult<School>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null);
 		Task<SchoolDTO> GetSingleSchool(int rspoId);
+		Task<SchoolDTO> GetSingleSchoolFromRSPO(int rspoId);
 		Task DeleteSingleSchool(int rspoId);
         Task DeleteManySchools(List<int> rspoIds);
         Task<ChangedSchoolsResponse> GetChangedSchoolsList(int size, int pageNumber);
