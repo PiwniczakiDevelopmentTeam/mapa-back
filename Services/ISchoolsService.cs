@@ -8,12 +8,12 @@ namespace mapa_back.Services
     public interface ISchoolsService
     {
         Task<PagedResult<School>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null);
-		Task<SchoolDTO> GetSingleSchool(int id);
-		Task DeleteSingleSchool(int id);
-        Task DeleteManySchools(List<int> ids);
+		Task<SchoolDTO> GetSingleSchool(int rspoId);
+		Task DeleteSingleSchool(int rspoId);
+        Task DeleteManySchools(List<int> rspoIds);
         Task<ChangedSchoolsResponse> GetChangedSchoolsList(int size, int pageNumber);
         Task<long> GetSchoolsCount();
-        Task<ChangedSchool> GetSingleChangedSchool(int id);
+        Task<ChangedSchool> GetSingleChangedSchool(int rspoId);
         Task<bool> PostSingleSchool(School school);
         Task<bool> PostManySchools(List<School> schools);
         Task<bool> UpdateSingleSchool(School school);

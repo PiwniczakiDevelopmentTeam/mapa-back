@@ -70,17 +70,17 @@ namespace mapa_back.Services
                 throw new Exception("Unexpected error occurred while trying to get school page from database");
             }
         }
-        public async Task DeleteSingleSchool(int id)
+        public async Task DeleteSingleSchool(int rspoId)
         {
             try
             {
-                SchoolActual school = await _dbContext.SchoolsActual.FirstOrDefaultAsync(p => p.Id == id) ?? throw new DatabaseException($"Couldnt find school with given Id: {id}");
+                SchoolActual school = await _dbContext.SchoolsActual.FirstOrDefaultAsync(p => p.NumerRspo == rspoId) ?? throw new DatabaseException($"Couldnt find school with given Id: {rspoId}");
                 _dbContext.SchoolsActual.Remove(school);
                 await _dbContext.SaveChangesAsync();
             }
             catch (Exception)
             {
-                throw new DatabaseException($"Unexpected eror occurred while trying to delete school with given Id: {id} from database");
+                throw new DatabaseException($"Unexpected eror occurred while trying to delete school with given Id: {rspoId} from database");
             }
 		}
         public async Task<bool> AddSchoolsFromRSPOTableToActualSchoolTable()
@@ -143,11 +143,11 @@ namespace mapa_back.Services
 			}
             return true;
 		}
-			public async Task DeleteManySchools(List<int> ids)
+			public async Task DeleteManySchools(List<int> rspoIds)
         {
             try
             {
-                List<SchoolActual> schools = await _dbContext.SchoolsActual.Where(school => ids.Contains(school.Id)).ToListAsync();
+                List<SchoolActual> schools = await _dbContext.SchoolsActual.Where(school => rspoIds.Contains(school.NumerRspo)).ToListAsync();
                 if (!schools.Any())
                 {
                     throw new DatabaseException("No schools found with the provided IDs.");
@@ -199,25 +199,25 @@ namespace mapa_back.Services
             }
             
         }
-		public async Task<SchoolDTO> GetSingleSchool(int id)
+		public async Task<SchoolDTO> GetSingleSchool(int rspoId)
         {
-			if (id <= 0)
+			if (rspoId <= 0)
 			{
 				throw new ArgumentException("Id has to be higher than 0");
 			}
 
-			School? singleSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(s => s.Id == id);
+			School? singleSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(s => s.NumerRspo == rspoId);
             if (singleSchool == null) return null;
             return SchoolMapper.MapToDTO(singleSchool);
 		}
-		public async Task<ChangedSchool> GetSingleChangedSchool(int id)
+		public async Task<ChangedSchool> GetSingleChangedSchool(int rspoId)
         {
-            if(id <= 0)
+            if(rspoId <= 0)
             {
                 throw new ArgumentException("Id has to be higher than 0");
             }
     
-            School? singleSchool = _dbContext.SchoolsActual.FirstOrDefault(s => s.Id == id);
+            School? singleSchool = _dbContext.SchoolsActual.FirstOrDefault(s => s.NumerRspo == rspoId);
             if(singleSchool == null)
             {
                 throw new SchoolServiceException("Couldnt find school with given Id in database");

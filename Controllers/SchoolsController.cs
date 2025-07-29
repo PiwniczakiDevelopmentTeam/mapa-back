@@ -89,11 +89,11 @@ namespace mapa_back.Controllers
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
-		public async Task<ActionResult<SchoolDTO>> GetSingleSchool(int id)
+		public async Task<ActionResult<SchoolDTO>> GetSingleSchool(int rspoId)
 		{
 			try
 			{
-				SchoolDTO singleSchool = await schoolsService.GetSingleSchool(id);
+				SchoolDTO singleSchool = await schoolsService.GetSingleSchool(rspoId);
 				return singleSchool == null ? NotFound() : Ok(singleSchool);
 			}
 			catch (Exception)
@@ -138,16 +138,16 @@ namespace mapa_back.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<string>> DeleteSingleSchool(int id)
+        public async Task<ActionResult<string>> DeleteSingleSchool(int rspoId)
         {
             try
             {
-                if (id <= 0)
+                if (rspoId <= 0)
                 {
                     return BadRequest("Invalid school id");
                 }
-                await schoolsService.DeleteSingleSchool(id);
-                return Ok($"school with id: {id} deleted");           
+                await schoolsService.DeleteSingleSchool(rspoId);
+                return Ok($"school with id: {rspoId} deleted");           
             }
             catch(DatabaseException ex)
             {
@@ -165,20 +165,20 @@ namespace mapa_back.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<string>> DeleteManySchools(List<int> ids)
+        public async Task<ActionResult<string>> DeleteManySchools(List<int> rspoIds)
         {
             try
             {
-                if (ids.Count <= 0)
+                if (rspoIds.Count <= 0)
                 {
                     return BadRequest("ID list empty");
                 }
-                var invalidIds = ids.Where(id => id <= 0).ToList();
+                var invalidIds = rspoIds.Where(id => id <= 0).ToList();
                 if (invalidIds.Any())
                 {
                     return BadRequest($"The following IDs are invalid: {string.Join(", ", invalidIds)}");
                 }
-                await schoolsService.DeleteManySchools(ids);
+                await schoolsService.DeleteManySchools(rspoIds);
                 return Ok($"school with given ids deleted");
             }
             catch (DatabaseException ex)
@@ -231,11 +231,11 @@ namespace mapa_back.Controllers
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
-		public async Task<ActionResult<ChangedSchool>> GetSingleSchoolWithChanges(int id)
+		public async Task<ActionResult<ChangedSchool>> GetSingleSchoolWithChanges(int rspoId)
 		{
 			try
 			{
-				ChangedSchool response = await schoolsService.GetSingleChangedSchool(id);
+				ChangedSchool response = await schoolsService.GetSingleChangedSchool(rspoId);
 				if (response == null)
 				{
 					return NotFound();
