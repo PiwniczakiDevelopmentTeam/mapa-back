@@ -124,6 +124,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseCors(options =>
+{
+    options.AllowAnyHeader();
+    options.AllowAnyMethod();
+    options.WithOrigins("http://localhost:3000", "http://localhost:8080", "https://localhost:3000", "https://localhost:8080")
+           .AllowCredentials();
+});
 
 app.UseHttpsRedirection();
 
