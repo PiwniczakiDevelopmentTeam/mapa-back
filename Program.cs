@@ -20,13 +20,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 Env.Load();
 builder.Services.AddControllers()
-	.AddJsonOptions(options =>
-	{
-		options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
         options.JsonSerializerOptions.Converters.Add(
-			new GeoJsonConverterFactory());
-	});
+            new GeoJsonConverterFactory());
+    });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -71,10 +71,10 @@ if (jwtSecret.Length < 16)
     throw new InvalidOperationException("JWT secret is too short.");
 }
 
-builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(connectionString, o => o.UseNetTopologySuite()), optionsLifetime:ServiceLifetime.Scoped);
+builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(connectionString, o => o.UseNetTopologySuite()), optionsLifetime: ServiceLifetime.Scoped);
 builder.Services.AddScoped<IRSPOApiService, RSPOApiService>();
 builder.Services.AddScoped<ISchoolsService, SchoolsService>();
-builder.Services.AddScoped<IUsersService,  UsersService>();
+builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddSingleton<RSPOProgressTracker>();
 builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddTransient<JwtMiddleware>();
@@ -110,20 +110,15 @@ builder.Services.AddAuthorization(options =>
 builder.Host.UseSystemd();
 
 var app = builder.Build();
-app.UseMiddleware<JwtMiddleware>();
-app.UseCors(options => 
-{
-    options.AllowAnyHeader();
-    options.AllowAnyMethod();
-    options.AllowAnyOrigin();
- });
 
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+
 app.UseCors(options =>
 {
     options.AllowAnyHeader();
@@ -134,7 +129,11 @@ app.UseCors(options =>
 
 app.UseHttpsRedirection();
 
+
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<JwtMiddleware>();
 
 app.MapControllers();
 
