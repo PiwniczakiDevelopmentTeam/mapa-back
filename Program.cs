@@ -110,7 +110,7 @@ builder.Services.AddAuthorization(options =>
 builder.Host.UseSystemd();
 
 var app = builder.Build();
-app.UseMiddleware<JwtMiddleware>();
+//app.UseMiddleware<JwtMiddleware>();
 app.UseCors(options => 
 {
     options.AllowAnyHeader();
@@ -127,6 +127,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
