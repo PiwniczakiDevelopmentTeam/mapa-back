@@ -168,6 +168,7 @@ namespace mapa_back.Services
 		        string body = await firstResponse.Content.ReadAsStringAsync();
 		        int page = 1;
 		        _progressTracker.CurrentPage = page;
+				_dbContext.SchoolsFromRSPO.ExecuteDelete();
 				while (!string.IsNullOrEmpty(body) && body.Trim() != "[]")
 		        {
 			        string url = $"api/placowki/?page={page}";
