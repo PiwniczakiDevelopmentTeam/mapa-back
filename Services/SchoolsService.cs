@@ -204,7 +204,7 @@ namespace mapa_back.Services
 				throw new ArgumentException("Id has to be higher than 0");
 			}
 
-			School? singleSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(s => s.NumerRspo == rspoId);
+			SchoolActual? singleSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(s => s.NumerRspo == rspoId);
             if (singleSchool == null) return null;
             return SchoolMapper.MapToDTO(singleSchool);
 		}
