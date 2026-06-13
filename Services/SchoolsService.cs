@@ -51,7 +51,7 @@ namespace mapa_back.Services
 					query = FilterBuilder.ApplyFilters(query, filters);
 				}
 				int totalCount = await query.CountAsync();
-				List<SchoolActual> schoolsPage = await query.Where(p => true).Skip((pageNumber - 1) * size).Take(size).ToListAsync();
+				List<SchoolActual> schoolsPage = await query.Where(p => true).OrderBy(x => x.NumerRspo).Skip((pageNumber - 1) * size).Take(size).ToListAsync();
 
 				PagedResult<SchoolActual> result = new PagedResult<SchoolActual>
 				{
