@@ -35,5 +35,6 @@ namespace mapa_back.Models.DTO
 		public string? PodmiotProwadzacyTyp { get; set; }
         public string? PodmiotProwadzacyNazwa { get; set; }
         public GeographyDTO? Geography { get; set; }
+		public bool AutoUpdate { get; set; }
     }
 }

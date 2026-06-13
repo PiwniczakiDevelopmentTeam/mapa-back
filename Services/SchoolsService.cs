@@ -37,7 +37,7 @@ namespace mapa_back.Services
             }
             return true;
         }
-        public async Task<PagedResult<School>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null)
+        public async Task<PagedResult<SchoolActual>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null)
         {
             if (!ValidatePageParametres(pageNumber, size))
             {
@@ -45,15 +45,15 @@ namespace mapa_back.Services
             }
 			try
 			{
-				IQueryable<School> query = _dbContext.SchoolsActual;
+				IQueryable<SchoolActual> query = _dbContext.SchoolsActual;
 				if (filters != null)
 				{
 					query = FilterBuilder.ApplyFilters(query, filters);
 				}
 				int totalCount = await query.CountAsync();
-				List<School> schoolsPage = await query.Where(p => true).Skip((pageNumber - 1) * size).Take(size).ToListAsync();
+				List<SchoolActual> schoolsPage = await query.Where(p => true).Skip((pageNumber - 1) * size).Take(size).ToListAsync();
 
-				PagedResult<School> result = new PagedResult<School>
+				PagedResult<SchoolActual> result = new PagedResult<SchoolActual>
 				{
 					Items = schoolsPage,
 					TotalCount = totalCount
@@ -83,67 +83,65 @@ namespace mapa_back.Services
                 throw new DatabaseException($"Unexpected eror occurred while trying to delete school with given Id: {rspoId} from database");
             }
 		}
-        public async Task<bool> AddSchoolsFromRSPOTableToActualSchoolTable()
-        {
-			int size = 1000;
+		//Auto update from RSPO
+		public async Task<bool> SyncRspoToActual()
+		{
+			const int size = 1000;
 			int pageNumber = 0;
+
 			while (true)
 			{
-				List<SchoolFromRSPO> schoolsFromRSPO = await _dbContext.SchoolsFromRSPO
-							   .OrderBy(x => x.Id)
-							   .Skip(pageNumber * size)
-							   .Take(size)
-							   .ToListAsync();
+				var schoolsFromRSPO = await _dbContext.SchoolsFromRSPO
+					.OrderBy(x => x.Id)
+					.Skip(pageNumber * size)
+					.Take(size)
+					.ToListAsync();
 
-                if (!schoolsFromRSPO.Any())
-                {
-                    break;
-                }
+				if (!schoolsFromRSPO.Any())
+					break;
 
-				var schools = schoolsFromRSPO.Select(item => new SchoolActual
+				var rspoIds = schoolsFromRSPO.Select(x => x.NumerRspo).ToList();
+
+				var actualSchools = await _dbContext.SchoolsActual
+					.Where(x => rspoIds.Contains(x.NumerRspo))
+					.ToListAsync();
+
+				var actualDict = actualSchools
+					.ToDictionary(x => x.NumerRspo);
+
+				var toInsert = new List<SchoolActual>();
+
+				foreach (var rspo in schoolsFromRSPO)
 				{
-					NumerRspo = item.NumerRspo,
-					Geography = item.Geography,
-					Typ = item.Typ,
-					StatusPublicznoPrawny = item.StatusPublicznoPrawny,
-					Nazwa = item.Nazwa,
-					Wojewodztwo = item.Wojewodztwo,
-					Gmina = item.Gmina,
-					Powiat = item.Powiat,
-					Miejscowosc = item.Miejscowosc,
-					GminaRodzaj = item.GminaRodzaj,
-					KodPocztowy = item.KodPocztowy,
-					Ulica = item.Ulica,
-					NumerBudynku = item.NumerBudynku,
-					NumerLokalu = item.NumerLokalu,
-					Email = item.Email,
-					Telefon = item.Telefon,
-					StronaInternetowa = item.StronaInternetowa,
-					DyrektorImie = item.DyrektorImie,
-					DyrektorNazwisko = item.DyrektorNazwisko,
-					Nip = item.Nip,
-					Regon = item.Regon,
-					DataRozpoczecia = item.DataRozpoczecia,
-					DataZalozenia = item.DataZalozenia,
-					DataZakonczenia = item.DataZakonczenia,
-					DataLikwidacji = item.DataLikwidacji,
-					LiczbaUczniow = item.LiczbaUczniow,
-					KategoriaUczniow = item.KategoriaUczniow,
-					SpecyfikaSzkoly = item.SpecyfikaSzkoly,
-					PodmiotProwadzacyTyp = item.PodmiotProwadzacyTyp,
-                    PodmiotProwadzacy = item.PodmiotProwadzacy
-                }).ToList();
-				if (schools.Any())
-				{
-					await _dbContext.SchoolsActual.AddRangeAsync(schools);
-					await _dbContext.SaveChangesAsync();
+					if (actualDict.TryGetValue(rspo.NumerRspo, out var actual))
+					{
+						if (!actual.AutoUpdate)
+							continue;
+
+						actual.UpdateFrom(rspo);
+					}
+					else
+					{
+						var newSchool = new SchoolActual(rspo)
+						{
+							AutoUpdate = true
+						};
+
+						toInsert.Add(newSchool);
+					}
 				}
-				pageNumber++;
 
+				if (toInsert.Any())
+					await _dbContext.SchoolsActual.AddRangeAsync(toInsert);
+
+				await _dbContext.SaveChangesAsync();
+
+				pageNumber++;
 			}
-            return true;
+
+			return true;
 		}
-			public async Task DeleteManySchools(List<int> rspoIds)
+		public async Task DeleteManySchools(List<int> rspoIds)
         {
             try
             {
@@ -224,17 +222,12 @@ namespace mapa_back.Services
 		}
 		public async Task<ChangedSchool> GetSingleChangedSchool(int rspoId)
         {
-            if(rspoId <= 0)
-            {
-                throw new ArgumentException("Id has to be higher than 0");
-            }
-    
             School? singleSchool = _dbContext.SchoolsActual.FirstOrDefault(s => s.NumerRspo == rspoId);
             if(singleSchool == null)
             {
                 throw new SchoolServiceException("Couldnt find school with given Id in database");
             }
-            SchoolFromRSPO? singleSchoolFromRSPO = _dbContext.SchoolsFromRSPO.FirstOrDefault(s => s.NumerRspo == singleSchool.NumerRspo);
+			School? singleSchoolFromRSPO = _dbContext.SchoolsFromRSPO.FirstOrDefault(s => s.NumerRspo == singleSchool.NumerRspo);
             if(singleSchoolFromRSPO == null)
             {
                 throw new SchoolServiceException($"Couldn't find matching school in RSPO Database with given rspo number: {singleSchool.NumerRspo}");
@@ -245,7 +238,7 @@ namespace mapa_back.Services
 
 		}
 
-        public async Task<bool> PostSingleSchool(School school)
+        public async Task<bool> PostSingleSchool(SchoolActual school)
         {
             if(school == null)
             {
@@ -263,7 +256,7 @@ namespace mapa_back.Services
             }
         }
 
-		public async Task<bool> PostManySchools(List<School> schools)
+		public async Task<bool> PostManySchools(List<SchoolActual> schools)
 		{
 			if (schools == null)
 			{
@@ -288,7 +281,7 @@ namespace mapa_back.Services
 			}
 		}
 
-		public async Task<bool> UpdateSingleSchool(School school)
+		public async Task<bool> UpdateSingleSchool(SchoolActual school)
 		{
 			if (school == null)
 			{
@@ -315,7 +308,7 @@ namespace mapa_back.Services
 			}
 		}
 
-		public async Task<bool> UpdateManySchools(List<School> schools)
+		public async Task<bool> UpdateManySchools(List<SchoolActual> schools)
 		{
 			if (schools == null)
 			{
@@ -414,7 +407,7 @@ namespace mapa_back.Services
 
 			}
 		}
-
+		
         public async Task AddSchoolsFromRSPOTableToMapSchoolTable()
         {
             int skip = 0;
@@ -435,7 +428,6 @@ namespace mapa_back.Services
 			}
 
         }
-
 
 	}
 }

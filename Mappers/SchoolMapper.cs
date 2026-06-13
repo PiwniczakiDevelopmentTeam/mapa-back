@@ -1,9 +1,10 @@
-﻿using mapa_back.Models.DTO;
-using mapa_back.Models;
-using NetTopologySuite.Geometries;
-using System.Text.Json;
-using Newtonsoft.Json;
+﻿using mapa_back.Data;
 using mapa_back.Data.RSPOApi.PodmiotProwadzacy;
+using mapa_back.Models;
+using mapa_back.Models.DTO;
+using NetTopologySuite.Geometries;
+using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace mapa_back.Mappers
 {
@@ -96,9 +97,9 @@ namespace mapa_back.Mappers
 			};
 		}
 
-		public static School MapToSchool(SchoolDTO school)
+		public static SchoolActual MapToActualSchool(SchoolDTO school)
 		{
-			return new School
+			return new SchoolActual
 			{
 				Id = school.Id,
 				NumerRspo = school.NumerRspo,
@@ -130,7 +131,8 @@ namespace mapa_back.Mappers
 				SpecyfikaSzkoly = school.SpecyfikaSzkoly,
                 PodmiotProwadzacyTyp = school.PodmiotProwadzacyTyp,
                 PodmiotProwadzacy = school.PodmiotProwadzacyNazwa,
-                Geography = MapToGeography(school.Geography)
+                Geography = MapToGeography(school.Geography),
+				AutoUpdate = school.AutoUpdate
 			};
 		}
 

@@ -127,7 +127,7 @@ namespace mapa_back.Controllers
         {
             try
             {
-				PagedResult<School> schoolsPage = await schoolsService.GetSchoolsPage(size, pageNumber, filters);
+				PagedResult<SchoolActual> schoolsPage = await schoolsService.GetSchoolsPage(size, pageNumber, filters);
                 if (schoolsPage.Items.Count > 0)
                 {
                     return Ok(schoolsPage);
@@ -280,7 +280,7 @@ namespace mapa_back.Controllers
 		{
 			try
 			{
-                bool response = await schoolsService.PostSingleSchool(SchoolMapper.MapToSchool(schoolDTO));
+                bool response = await schoolsService.PostSingleSchool(SchoolMapper.MapToActualSchool(schoolDTO));
 				if (response == false)
 				{
 					return StatusCode(500, "Unexpected error occurred");
@@ -307,7 +307,7 @@ namespace mapa_back.Controllers
 		{
 			try
 			{
-                List<School> schools = schoolsDTO.Select(x => SchoolMapper.MapToSchool(x)).ToList();
+                List<SchoolActual> schools = schoolsDTO.Select(x => SchoolMapper.MapToActualSchool(x)).ToList();
 				bool response = await schoolsService.PostManySchools(schools);
 				if (response == false)
 				{
@@ -334,7 +334,7 @@ namespace mapa_back.Controllers
 		{
 			try
 			{
-				bool response = await schoolsService.UpdateSingleSchool(SchoolMapper.MapToSchool(schoolDTO));
+				bool response = await schoolsService.UpdateSingleSchool(SchoolMapper.MapToActualSchool(schoolDTO));
 				if (response == false)
 				{
 					return StatusCode(500, "Unexpected error occurred");
@@ -364,11 +364,41 @@ namespace mapa_back.Controllers
 		{
 			try
 			{
-				List<School> schools = schoolsDTO.Select(x => SchoolMapper.MapToSchool(x)).ToList();
+				List<SchoolActual> schools = schoolsDTO.Select(x => SchoolMapper.MapToActualSchool(x)).ToList();
 				bool response = await schoolsService.UpdateManySchools(schools);
 				if (response == false)
 				{
 					return StatusCode(500,"Unexpected error occurred");
+				}
+				return Ok(response);
+			}
+			catch (ArgumentException ex)
+			{
+				return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
+			}
+			catch (SchoolServiceException ex)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+			}
+			catch (Exception)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to get changes. Try again later");
+			}
+		}
+
+		[HttpPut("SyncRspoToActual")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+		public async Task<ActionResult<bool>> SyncRspoToActual()
+		{
+			try
+			{
+				bool response = await schoolsService.SyncRspoToActual();
+				if (response == false)
+				{
+					return StatusCode(500, "Unexpected error occurred");
 				}
 				return Ok(response);
 			}
@@ -484,7 +514,7 @@ namespace mapa_back.Controllers
 			}
 		}
 
-
+		//AWARYJNE COPY SCHOOLS PRZED UZYCIEM DROP WSZYSTKICH RZECZY W PRIVATE SCHOOLS
 		[HttpGet("CopySchools")]
         public async Task<ActionResult<bool>> CopySchools()
         {

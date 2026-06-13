@@ -126,7 +126,6 @@ namespace mapa_back.Models
 		[Column("podmiot_prowadzacy_typ")]
 		public string? PodmiotProwadzacyTyp { get; set; }
 
-
 		public override bool Equals(object? obj)
 		{
 			if (obj is not School other) return false;
@@ -156,7 +155,7 @@ namespace mapa_back.Models
 				   DataZalozenia == other.DataZalozenia &&
 				   DataZakonczenia == other.DataZakonczenia &&
 				   DataLikwidacji == other.DataLikwidacji &&
-//				   LiczbaUczniow == other.LiczbaUczniow && //XDDDDDDDDDDDDDD
+				   LiczbaUczniow == other.LiczbaUczniow &&
 				   KategoriaUczniow == other.KategoriaUczniow &&
 				   SpecyfikaSzkoly == other.SpecyfikaSzkoly &&
 				   PodmiotProwadzacy == other.PodmiotProwadzacy &&
