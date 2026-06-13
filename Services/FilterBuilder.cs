@@ -25,13 +25,23 @@ namespace mapa_back.Services
 				if (propertyInfo.PropertyType == typeof(string))
 				{
 					var toLower = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes);
+					var containsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) });
+
 					var left = Expression.Call(property, toLower!);
 					var right = Expression.Constant(filter.value.ToString()!.ToLower());
 
 					var notNull = Expression.NotEqual(property, Expression.Constant(null, typeof(string)));
-					var equal = Expression.Equal(left, right);
 
-					comparison = Expression.AndAlso(notNull, equal);
+					if (filter.field.Equals("nazwa", StringComparison.OrdinalIgnoreCase))
+					{
+						var contains = Expression.Call(left, containsMethod!, right);
+						comparison = Expression.AndAlso(notNull, contains);
+					}
+					else
+					{
+						var equal = Expression.Equal(left, right);
+						comparison = Expression.AndAlso(notNull, equal);
+					}
 				}
 				else
 				{

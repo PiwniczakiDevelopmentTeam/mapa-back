@@ -26,7 +26,5 @@ namespace mapa_back.Services
 		Task<int> GetMissingSchoolsInSchoolsTableCount();
         Task AddSchoolsFromRSPOTableToMapSchoolTable();
 
-
-
 	}
 }
