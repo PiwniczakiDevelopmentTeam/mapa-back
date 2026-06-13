@@ -37,6 +37,18 @@ builder.Services.AddControllers()
 
 #endregion
 
+
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy("AllowAll", policy =>
+	{
+		policy
+			.AllowAnyOrigin()
+			.AllowAnyHeader()
+			.AllowAnyMethod();
+	});
+});
+
 #region RSPO OPTIONS
 
 builder.Services.AddOptions<RspoApiOptions>()
@@ -48,7 +60,7 @@ builder.Services.AddOptions<RspoApiOptions>()
 
 #endregion
 
-#region HTTP CLIENT (BASIC AUTH - CLEAN)
+#region HTTP CLIENT
 
 builder.Services.AddHttpClient<IRSPOApiService, RSPOApiService>((sp, client) =>
 {
@@ -59,35 +71,20 @@ builder.Services.AddHttpClient<IRSPOApiService, RSPOApiService>((sp, client) =>
 	var credentials = Convert.ToBase64String(
 		Encoding.UTF8.GetBytes($"{cfg.Username}:{cfg.Password}")
 	);
-	Console.WriteLine(credentials);
+
 	client.DefaultRequestHeaders.Authorization =
 		new AuthenticationHeaderValue("Basic", credentials);
 
-	client.DefaultRequestHeaders.Accept.Clear();
 	client.DefaultRequestHeaders.Accept.Add(
 		new MediaTypeWithQualityHeaderValue("application/json"));
-
-	client.DefaultRequestHeaders.UserAgent.ParseAdd(
-		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-	);
-
-	client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("pl-PL,pl;q=0.9,en;q=0.8");
-
-	client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue
-	{
-		NoCache = true
-	};
 })
-.ConfigurePrimaryHttpMessageHandler(() =>
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
 {
-	return new HttpClientHandler
-	{
-		UseCookies = true,
-		CookieContainer = new CookieContainer(),
-		AutomaticDecompression =
-			DecompressionMethods.GZip | DecompressionMethods.Deflate,
-		AllowAutoRedirect = true
-	};
+	UseCookies = true,
+	CookieContainer = new CookieContainer(),
+	AutomaticDecompression =
+		DecompressionMethods.GZip | DecompressionMethods.Deflate,
+	AllowAutoRedirect = true
 });
 
 #endregion
@@ -95,7 +92,6 @@ builder.Services.AddHttpClient<IRSPOApiService, RSPOApiService>((sp, client) =>
 #region SWAGGER
 
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(c =>
 {
 	c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -135,16 +131,7 @@ builder.Host.UseSystemd();
 
 var app = builder.Build();
 
-#region MIDDLEWARE
-
-app.UseMiddleware<JwtMiddleware>();
-
-app.UseCors(x =>
-{
-	x.AllowAnyHeader();
-	x.AllowAnyMethod();
-	x.AllowAnyOrigin();
-});
+#region PIPELINE (FIX ORDER)
 
 if (app.Environment.IsDevelopment())
 {
@@ -154,8 +141,23 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowAll");
+
+app.Use(async (context, next) =>
+{
+	if (context.Request.Method == "OPTIONS")
+	{
+		context.Response.StatusCode = 200;
+		return;
+	}
+
+	await next();
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<JwtMiddleware>();
+
 app.MapControllers();
 
 #endregion
