@@ -407,27 +407,40 @@ namespace mapa_back.Services
 
 			}
 		}
-		
-        public async Task AddSchoolsFromRSPOTableToMapSchoolTable()
-        {
-            int skip = 0;
-            int limit = 100;
-            long count = _dbContext.SchoolsFromRSPO.Count();
-            List<School> schools = _dbContext.SchoolsFromRSPO.Skip(skip).Take(limit).ToList<School>();
-            while(schools.Count > 0)
-            {
-				List<SchoolActual> actualSchools = schools
-					.Select(s => new SchoolActual(s) { AutoUpdate = true})
-					.ToList(); 
 
-                await _dbContext.SchoolsActual.AddRangeAsync(actualSchools);
+		public async Task AddSchoolsFromRSPOTableToMapSchoolTable()
+		{
+			int skip = 0;
+			int limit = 100;
+
+			long count = await _dbContext.SchoolsFromRSPO.CountAsync();
+
+			while (true)
+			{
+				var schools = await _dbContext.SchoolsFromRSPO
+					.AsNoTracking()
+					.OrderBy(x => x.Id)
+					.Skip(skip)
+					.Take(limit)
+					.ToListAsync();
+
+				if (!schools.Any())
+					break;
+
+				var actualSchools = schools
+					.Select(s => new SchoolActual(s)
+					{
+						AutoUpdate = true
+					})
+					.ToList();
+
+				await _dbContext.SchoolsActual.AddRangeAsync(actualSchools);
 				await _dbContext.SaveChangesAsync();
-                skip += 100;
-				schools = _dbContext.SchoolsFromRSPO.Skip(skip).Take(limit).ToList<School>();
-                Console.WriteLine($"Readed {skip}/{count} schools");
+
+				skip += limit;
+
+				Console.WriteLine($"Read {skip}/{count} schools");
 			}
-
-        }
-
+		}
 	}
 }
