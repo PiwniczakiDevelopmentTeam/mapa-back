@@ -156,7 +156,7 @@ namespace mapa_back.Models
 				   DataZalozenia == other.DataZalozenia &&
 				   DataZakonczenia == other.DataZakonczenia &&
 				   DataLikwidacji == other.DataLikwidacji &&
-				   LiczbaUczniow == other.LiczbaUczniow &&
+//				   LiczbaUczniow == other.LiczbaUczniow && //XDDDDDDDDDDDDDD
 				   KategoriaUczniow == other.KategoriaUczniow &&
 				   SpecyfikaSzkoly == other.SpecyfikaSzkoly &&
 				   PodmiotProwadzacy == other.PodmiotProwadzacy &&
