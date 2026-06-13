@@ -417,7 +417,7 @@ namespace mapa_back.Services
             while(schools.Count > 0)
             {
 				List<SchoolActual> actualSchools = schools
-					.Select(s => new SchoolActual(s))
+					.Select(s => new SchoolActual(s) { AutoUpdate = true})
 					.ToList(); 
 
                 await _dbContext.SchoolsActual.AddRangeAsync(actualSchools);
