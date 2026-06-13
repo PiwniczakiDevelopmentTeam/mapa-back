@@ -88,8 +88,9 @@ namespace mapa_back.Models.RSPOApi
         [JsonPropertyName("podmiotProwadzacy")]
 		public List<RSPOTypeSchema>? PodmiotProwadzacy { get; set; }
 
-        [JsonPropertyName("geolokalizacja")]
-        public required Geolokalizacja Geolokalizacja { get; set; }
+		[JsonPropertyName("geolokalizacja")]
+		public required List<Geolokalizacja> Geolokalizacja { get; set; }
+		public Geolokalizacja? Geo => Geolokalizacja?.FirstOrDefault();
 
-    }
+	}
 }

@@ -1,134 +1,161 @@
+﻿global using mapa_back.Helpers;
 global using mapa_back.Middlewares;
-global using mapa_back.Helpers;
+
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json.Serialization;
 using DotNetEnv;
 using mapa_back;
-using mapa_back.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Microsoft.OpenApi.Models;
-using System.Text.Json.Serialization;
-using NetTopologySuite.IO.Converters;
+using mapa_back.Configuration;
 using mapa_back.Data.RSPOApi;
-
+using mapa_back.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
+using NetTopologySuite.IO.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 Env.Load();
+builder.Configuration.AddEnvironmentVariables();
+
+#region CONTROLLERS
+
 builder.Services.AddControllers()
-	.AddJsonOptions(options =>
+	.AddJsonOptions(opt =>
 	{
-		options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
-        options.JsonSerializerOptions.Converters.Add(
+		opt.JsonSerializerOptions.NumberHandling =
+			JsonNumberHandling.AllowNamedFloatingPointLiterals;
+
+		opt.JsonSerializerOptions.ReferenceHandler =
+			ReferenceHandler.Preserve;
+
+		opt.JsonSerializerOptions.Converters.Add(
 			new GeoJsonConverterFactory());
 	});
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+#endregion
+
+#region RSPO OPTIONS
+
+builder.Services.AddOptions<RspoApiOptions>()
+	.Bind(builder.Configuration.GetSection("RspoApi"))
+	.Validate(o => !string.IsNullOrWhiteSpace(o.BaseUrl), "RspoApi:BaseUrl missing")
+	.Validate(o => !string.IsNullOrWhiteSpace(o.Username), "RspoApi:Username missing")
+	.Validate(o => !string.IsNullOrWhiteSpace(o.Password), "RspoApi:Password missing")
+	.ValidateOnStart();
+
+#endregion
+
+#region HTTP CLIENT (BASIC AUTH - CLEAN)
+
+builder.Services.AddHttpClient<IRSPOApiService, RSPOApiService>((sp, client) =>
+{
+	var cfg = sp.GetRequiredService<IOptions<RspoApiOptions>>().Value;
+
+	client.BaseAddress = new Uri(cfg.BaseUrl.TrimEnd('/'));
+
+	var credentials = Convert.ToBase64String(
+		Encoding.UTF8.GetBytes($"{cfg.Username}:{cfg.Password}")
+	);
+	Console.WriteLine(credentials);
+	client.DefaultRequestHeaders.Authorization =
+		new AuthenticationHeaderValue("Basic", credentials);
+
+	client.DefaultRequestHeaders.Accept.Clear();
+	client.DefaultRequestHeaders.Accept.Add(
+		new MediaTypeWithQualityHeaderValue("application/json"));
+
+	client.DefaultRequestHeaders.UserAgent.ParseAdd(
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+	);
+
+	client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("pl-PL,pl;q=0.9,en;q=0.8");
+
+	client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue
+	{
+		NoCache = true
+	};
+})
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+	return new HttpClientHandler
+	{
+		UseCookies = true,
+		CookieContainer = new CookieContainer(),
+		AutomaticDecompression =
+			DecompressionMethods.GZip | DecompressionMethods.Deflate,
+		AllowAutoRedirect = true
+	};
+});
+
+#endregion
+
+#region SWAGGER
+
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(c =>
 {
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Format: 'Bearer {token}'"
-    });
-
-    c.OperationFilter<AuthorizeOperationFilter>();
+	c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+	{
+		Name = "Authorization",
+		Type = SecuritySchemeType.Http,
+		Scheme = "bearer",
+		BearerFormat = "JWT",
+		In = ParameterLocation.Header
+	});
 });
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
-if (string.IsNullOrEmpty(connectionString))
-{
-    throw new InvalidOperationException("Database connection string is not set.");
-}
 
-var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
-if (string.IsNullOrEmpty(jwtIssuer))
-{
-    throw new InvalidOperationException("JWT issuer is not set.");
-}
+#endregion
 
-var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
-if (string.IsNullOrEmpty(jwtAudience))
-{
-    throw new InvalidOperationException("JWT audience is not set.");
-}
+#region DB
 
-var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
-if (string.IsNullOrEmpty(jwtSecret))
-{
-    throw new InvalidOperationException("JWT secret is not set.");
-}
-if (jwtSecret.Length < 16)
-{
-    throw new InvalidOperationException("JWT secret is too short.");
-}
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
+	?? throw new InvalidOperationException("DB missing");
 
-builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(connectionString, o => o.UseNetTopologySuite()), optionsLifetime:ServiceLifetime.Scoped);
-builder.Services.AddScoped<IRSPOApiService, RSPOApiService>();
+builder.Services.AddDbContext<DatabaseContext>(opt =>
+	opt.UseNpgsql(connectionString, o => o.UseNetTopologySuite()));
+
+#endregion
+
+#region SERVICES
+
 builder.Services.AddScoped<ISchoolsService, SchoolsService>();
-builder.Services.AddScoped<IUsersService,  UsersService>();
+builder.Services.AddScoped<IUsersService, UsersService>();
+
 builder.Services.AddSingleton<RSPOProgressTracker>();
 builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddTransient<JwtMiddleware>();
-builder.Services.AddHttpClient();
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtIssuer,
-        ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret!)),
-        ClockSkew = TimeSpan.Zero
-    };
-});
 
-// Configure the default authorization policy
-builder.Services.AddAuthorization(options =>
-{
-    options.DefaultPolicy = new AuthorizationPolicyBuilder()
-            .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
-            .RequireAuthenticatedUser()
-            .Build();
+#endregion
 
-});
 builder.Host.UseSystemd();
 
 var app = builder.Build();
-app.UseMiddleware<JwtMiddleware>();
-app.UseCors(options => 
-{
-    options.AllowAnyHeader();
-    options.AllowAnyMethod();
-    options.AllowAnyOrigin();
- });
 
-// Configure the HTTP request pipeline.
+#region MIDDLEWARE
+
+app.UseMiddleware<JwtMiddleware>();
+
+app.UseCors(x =>
+{
+	x.AllowAnyHeader();
+	x.AllowAnyMethod();
+	x.AllowAnyOrigin();
+});
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+	app.UseSwagger();
+	app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
+
+#endregion
 
 app.Run();

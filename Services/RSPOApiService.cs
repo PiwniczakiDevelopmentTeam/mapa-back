@@ -1,4 +1,5 @@
-﻿using mapa_back.Data.RSPOApi;
+﻿using mapa_back.Configuration;
+using mapa_back.Data.RSPOApi;
 using mapa_back.Exceptions;
 using mapa_back.Models;
 using mapa_back.Models.RSPOApi;
@@ -7,6 +8,7 @@ using NetTopologySuite.Geometries;
 using System;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 
 namespace mapa_back.Services
 {
@@ -15,12 +17,14 @@ namespace mapa_back.Services
         private readonly DatabaseContext _dbContext;
         private readonly HttpClient _httpClient;
 		private readonly RSPOProgressTracker _progressTracker;
+		private readonly RspoApiOptions _config;
 
-		public RSPOApiService(DatabaseContext dbContext, HttpClient httpClient, RSPOProgressTracker progressTracker)
+		public RSPOApiService(DatabaseContext dbContext, HttpClient httpClient, RSPOProgressTracker progressTracker, IOptions<RspoApiOptions> config)
         {
             _dbContext = dbContext;
             _httpClient = httpClient;
             _progressTracker = progressTracker;
+            _config = config.Value;
         }
         
 
@@ -56,9 +60,7 @@ namespace mapa_back.Services
             {
                 using (JsonDocument doc = JsonDocument.Parse(responseBody))
                 {
-                    JsonElement root = doc.RootElement;
-                    JsonElement schoolListJson = root.GetProperty("hydra:member");
-                    List<SchoolApi> schools = JsonSerializer.Deserialize<List<SchoolApi>>(schoolListJson) ?? new List<SchoolApi>();
+                    List<SchoolApi> schools = JsonSerializer.Deserialize<List<SchoolApi>>(responseBody) ?? new List<SchoolApi>();
                     return schools;
                 }
             }
@@ -110,8 +112,8 @@ namespace mapa_back.Services
 				school.LiczbaUczniow = schoolFromApi.LiczbaUczniow;
 				school.KategoriaUczniow = schoolFromApi.KategoriaUczniow?.Nazwa;
 				school.SpecyfikaSzkoly = schoolFromApi.SpecyfikaSzkoly?.Nazwa;
-                school.PodmiotProwadzacy = schoolFromApi.PodmiotProwadzacy?.First().Nazwa;
-				school.PodmiotProwadzacyTyp = schoolFromApi.PodmiotProwadzacy?.First().Typ?.Nazwa;
+                school.PodmiotProwadzacy = schoolFromApi.PodmiotProwadzacy?.FirstOrDefault()?.Nazwa;
+				school.PodmiotProwadzacyTyp = schoolFromApi.PodmiotProwadzacy?.FirstOrDefault()?.Typ?.Nazwa;
 			}
             catch(Exception ex)
             {
@@ -131,7 +133,8 @@ namespace mapa_back.Services
         {
             foreach (var school in schools)
             {
-                Point point = new Point(new Coordinate { X = school.Geolokalizacja.Longitude, Y = school.Geolokalizacja.Latitude });
+                //Sometimes RSPO APi gives no data about geo. In that case I'll just set 0,0
+                Point point = new Point(new Coordinate { X = school.Geo?.Longitude ?? 0, Y = school.Geo?.Latitude ?? 0 });
                 await SaveSingleSchoolToDatabase(point, school, invalidRspoNumbers, exceptions);
             }
             try
@@ -147,57 +150,49 @@ namespace mapa_back.Services
         }
         public async Task SyncDataFromRSPOApi()
         {
-			if (_progressTracker.IsSyncInProgress) return;
+	        if (_progressTracker.IsSyncInProgress)
+		        return;
 
-			_progressTracker.IsSyncInProgress = true;
-			_progressTracker.CurrentPage = 0;
-			_progressTracker.MaxPage = 0;
-            _progressTracker.InvalidRspoNumbers = new List<int>();
-            _progressTracker.Exceptions = new List<string>();
+	        _progressTracker.IsSyncInProgress = true;
+	        _progressTracker.Exceptions = new List<string>();
 
-			List<int> invalidRspoNumbers = new List<int>();
-			List<string> exceptions = new List<string>();
-			string url = "https://api-rspo.men.gov.pl/api/placowki/?page=1";
-            int numberOfPages = 0;
-            try
-            {
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                {
-                    response.EnsureSuccessStatusCode();
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    numberOfPages = GetNumberOfPages(responseBody);
-                    _progressTracker.MaxPage = numberOfPages;
-                }
+	        try
+	        {
+		        await EnsureSessionAsync();
 
-                for (int i = 1; i <= numberOfPages; i++)
-                {
-					_progressTracker.CurrentPage = i;
-					url = $"https://api-rspo.men.gov.pl/api/placowki/?page={i}";
-                    using (HttpResponseMessage response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
-                    {
-                        response.EnsureSuccessStatusCode();
-                        string responseBody = await response.Content.ReadAsStringAsync();
-                        List<SchoolApi> schools = GetSchoolsFromResponse(responseBody);
-                        await SaveSchoolsToDatabase(schools, invalidRspoNumbers, exceptions);
-                    }
-                    Console.WriteLine($"Readed page nr {i}");
-                }
-				_progressTracker.InvalidRspoNumbers = invalidRspoNumbers;
-				_progressTracker.Exceptions = exceptions;
-            }
-			catch (RSPOToDatabaseException ex)
-			{
-                _progressTracker.Exceptions.Add(ex.Message);
-			}
-			catch (Exception)
-			{
-				_progressTracker.Exceptions.Add("Unexpected error occurred while trying to get data from RSPO API");
-			}
-            finally
-            {
-                _progressTracker.IsSyncInProgress = false;
-			}
+		        string firstUrl = "api/placowki/?page=1";
+
+		        using var firstResponse = await _httpClient.GetAsync(firstUrl);
+		        firstResponse.EnsureSuccessStatusCode();
+
+		        string body = await firstResponse.Content.ReadAsStringAsync();
+		        int page = 1;
+		        _progressTracker.CurrentPage = page;
+				while (!string.IsNullOrEmpty(body) && body.Trim() != "[]")
+		        {
+			        string url = $"api/placowki/?page={page}";
+			        using HttpResponseMessage response = await _httpClient.GetAsync(url);
+			        response.EnsureSuccessStatusCode();
+			        body = await response.Content.ReadAsStringAsync();
+			        List<SchoolApi> schools = GetSchoolsFromResponse(body);
+			        await SaveSchoolsToDatabase(schools, new(), new());
+			        page++;
+			        _progressTracker.CurrentPage = page;
+				}
+	        }
+	        catch (Exception ex)
+	        {
+		        _progressTracker.Exceptions.Add(ex.Message);
+	        }
+	        finally
+	        {
+		        _progressTracker.IsSyncInProgress = false;
+	        }
+        }
+		private async Task EnsureSessionAsync()
+		{
+			await _httpClient.GetAsync("/");
 		}
-        
-    }
+
+	}
 }

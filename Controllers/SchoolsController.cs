@@ -17,28 +17,25 @@ namespace mapa_back.Controllers
     [ApiController]
     public class SchoolsController : ControllerBase
     {
-        private readonly IRSPOApiService rSPOApiService;
         private readonly ISchoolsService schoolsService;
 		private readonly IServiceProvider serviceProvider;
 		private readonly RSPOProgressTracker progressTracker;
-        public SchoolsController(DatabaseContext context, IRSPOApiService apiService, ISchoolsService schoolsService, RSPOProgressTracker progressTracker, IServiceProvider serviceProvider)
+        public SchoolsController(DatabaseContext context, ISchoolsService schoolsService, RSPOProgressTracker progressTracker, IServiceProvider serviceProvider)
         {
-            rSPOApiService = apiService;
             this.schoolsService = schoolsService;
 			this.progressTracker = progressTracker;
 			this.serviceProvider = serviceProvider;
 		}
 
-        [HttpGet("GetDataFromRSPO")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-
-        public async Task<ActionResult> GetDataFromRSPO()
+        [HttpGet("GetDataFromRSPO")]
+        public async Task<ActionResult> GetDataFromRSPO([FromServices] IRSPOApiService service)
         {
 			_ = Task.Run(async () =>
 			{
 				using var scope = serviceProvider.CreateScope();
 				var scopedService = scope.ServiceProvider.GetRequiredService<IRSPOApiService>();
-				await scopedService.SyncDataFromRSPOApi(); // teraz wszystko działa w nowym scope
+				await scopedService.SyncDataFromRSPOApi();
 			});
 			return Ok(new { message = "RSPO background sync started" });
 		}
@@ -49,7 +46,6 @@ namespace mapa_back.Controllers
 			return Ok(new
 			{
 				actualPage = progressTracker.CurrentPage,
-				maxPage = progressTracker.MaxPage,
 				isSyncInProgress = progressTracker.IsSyncInProgress,
 				invalidRspoNumbers = progressTracker.InvalidRspoNumbers,
 				exceptions = progressTracker.Exceptions
