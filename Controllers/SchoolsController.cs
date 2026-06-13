@@ -1,4 +1,4 @@
-﻿using mapa_back.Data;
+using mapa_back.Data;
 using mapa_back.Data.DTO;
 using mapa_back.Data.RSPOApi;
 using mapa_back.Exceptions;
@@ -7,6 +7,7 @@ using mapa_back.Models;
 using mapa_back.Models.DTO;
 using mapa_back.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -17,11 +18,13 @@ namespace mapa_back.Controllers
     [ApiController]
     public class SchoolsController : ControllerBase
     {
+        private readonly DatabaseContext databaseContext;
         private readonly ISchoolsService schoolsService;
 		private readonly IServiceProvider serviceProvider;
 		private readonly RSPOProgressTracker progressTracker;
         public SchoolsController(DatabaseContext context, ISchoolsService schoolsService, RSPOProgressTracker progressTracker, IServiceProvider serviceProvider)
         {
+            this.databaseContext = context;
             this.schoolsService = schoolsService;
 			this.progressTracker = progressTracker;
 			this.serviceProvider = serviceProvider;
@@ -521,6 +524,108 @@ namespace mapa_back.Controllers
             await schoolsService.AddSchoolsFromRSPOTableToMapSchoolTable();
             return Ok();
         }
-		
+
+		[HttpGet]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		public async Task<ActionResult> GetPublicSchools()
+		{
+			try
+			{
+				var schools = await databaseContext.SchoolsActual
+					.AsNoTracking()
+					.ToListAsync();
+
+				var result = schools.Select(MapToMapSchoolFormat).ToList();
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
+			}
+		}
+
+		[HttpGet("{id}")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		public async Task<ActionResult> GetPublicSchool(int id)
+		{
+			try
+			{
+				var school = await databaseContext.SchoolsActual
+					.AsNoTracking()
+					.FirstOrDefaultAsync(s => s.Id == id);
+
+				if (school == null)
+				{
+					return NotFound();
+				}
+
+				return Ok(MapToMapSchoolFormat(school));
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
+			}
+		}
+
+		private object MapToMapSchoolFormat(School school)
+		{
+			var lat = school.Geography?.Y ?? 0;
+			var lon = school.Geography?.X ?? 0;
+
+			return new
+			{
+				id = school.Id,
+				latitude = lat,
+				longtitude = lon, // matches "longtitude" in script.js
+				businessData = new
+				{
+					nazwa = school.Nazwa ?? string.Empty,
+					miejscowosc = school.Miejscowosc ?? string.Empty,
+					kodPocztowy = school.KodPocztowy ?? string.Empty,
+					poczta = school.Miejscowosc ?? string.Empty,
+					wojewodztwo = school.Wojewodztwo ?? string.Empty,
+					powiat = school.Powiat ?? string.Empty,
+					gmina = school.Gmina ?? string.Empty,
+					ulica = school.Ulica ?? string.Empty,
+					numerBudynku = school.NumerBudynku ?? string.Empty,
+					numerLokalu = school.NumerLokalu ?? string.Empty,
+					numerIokalu = school.NumerLokalu ?? string.Empty, // Duplicate for the typo in script.js line 240
+					dyrektor = $"{school.DyrektorImie} {school.DyrektorNazwisko}".Trim(),
+					telefon = school.Telefon ?? string.Empty,
+					faks = string.Empty,
+					email = school.Email ?? string.Empty,
+					stronaInternetowa = school.StronaInternetowa ?? string.Empty,
+					typ = school.Typ ?? string.Empty,
+					kategoriaUczniow = school.KategoriaUczniow ?? string.Empty,
+					statusPublicznosc = school.StatusPublicznoPrawny ?? string.Empty,
+					liczbaUczniow = school.LiczbaUczniow ?? 0,
+					jezykiNauczane = Array.Empty<string>(),
+					terenySportowe = string.Empty,
+					strukturaMiejsce = string.Empty,
+					rodzajMiejscowosci = school.GminaRodzaj ?? string.Empty,
+					specyfikaPlacowki = school.SpecyfikaSzkoly ?? string.Empty,
+					rspoNumer = school.NumerRspo.ToString(),
+					regonPodmiotu = school.Regon ?? string.Empty,
+					nipPodmiotu = school.Nip ?? string.Empty,
+					dataRozpoczeciaDzialalnosci = school.DataRozpoczecia?.ToString("yyyy-MM-dd") ?? string.Empty,
+					dataLikwidacji = school.DataLikwidacji?.ToString("yyyy-MM-dd") ?? string.Empty,
+					kodTerytorialnyMiejscowosc = string.Empty,
+					kodTerytorialnyGmina = string.Empty,
+					kodTerytorialnyPowiat = string.Empty,
+					kodTerytorialnyWojewodztwo = string.Empty,
+					podmiotNadrzednyNazwa = string.Empty,
+					podmiotNadrzednyTyp = string.Empty,
+					podmiotNadrzednyRspo = string.Empty,
+					organProwadzacyNazwa = school.PodmiotProwadzacy ?? string.Empty,
+					organProwadzacyNip = string.Empty,
+					organProwadzacyRegon = string.Empty,
+					organProwadzacyTyp = school.PodmiotProwadzacyTyp ?? string.Empty,
+					organProwadzacyGmina = string.Empty,
+					organProwadzacyPowiat = string.Empty,
+					organProwadzacyWojewodztwo = string.Empty
+				}
+			};
+		}
 	}
 }

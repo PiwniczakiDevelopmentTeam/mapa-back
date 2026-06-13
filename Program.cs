@@ -1,4 +1,4 @@
-﻿global using mapa_back.Helpers;
+global using mapa_back.Helpers;
 global using mapa_back.Middlewares;
 
 using System.Net;
@@ -126,6 +126,18 @@ builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddTransient<JwtMiddleware>();
 
 #endregion
+
+builder.Services.AddSwaggerGen();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 builder.Host.UseSystemd();
 
