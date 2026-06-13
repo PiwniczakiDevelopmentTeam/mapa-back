@@ -167,7 +167,7 @@ function fetchAllSchools() {
         .then((res) => res.json())
         .then((data) => {
             //write all schools to arr
-            schools = data;
+            schools = Array.isArray(data) ? data : (data && data.$values ? data.$values : []);
             //create marker for every school loaded
             schools.forEach((school) => {
                 createMarker(school);

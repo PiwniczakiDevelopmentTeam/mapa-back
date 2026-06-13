@@ -9,6 +9,7 @@ using mapa_back.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Text.Json;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -527,7 +528,7 @@ namespace mapa_back.Controllers
 
 		[HttpGet]
 		[ProducesResponseType(StatusCodes.Status200OK)]
-		public async Task<ActionResult> GetPublicSchools()
+		public async Task<IActionResult> GetPublicSchools()
 		{
 			try
 			{
@@ -536,7 +537,11 @@ namespace mapa_back.Controllers
 					.ToListAsync();
 
 				var result = schools.Select(MapToMapSchoolFormat).ToList();
-				return Ok(result);
+				var options = new JsonSerializerOptions
+				{
+					PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+				};
+				return new JsonResult(result, options);
 			}
 			catch (Exception ex)
 			{
@@ -547,7 +552,7 @@ namespace mapa_back.Controllers
 		[HttpGet("{id}")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
-		public async Task<ActionResult> GetPublicSchool(int id)
+		public async Task<IActionResult> GetPublicSchool(int id)
 		{
 			try
 			{
@@ -560,7 +565,11 @@ namespace mapa_back.Controllers
 					return NotFound();
 				}
 
-				return Ok(MapToMapSchoolFormat(school));
+				var options = new JsonSerializerOptions
+				{
+					PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+				};
+				return new JsonResult(MapToMapSchoolFormat(school), options);
 			}
 			catch (Exception ex)
 			{
