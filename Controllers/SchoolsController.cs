@@ -518,13 +518,6 @@ namespace mapa_back.Controllers
 			}
 		}
 
-		//AWARYJNE COPY SCHOOLS PRZED UZYCIEM DROP WSZYSTKICH RZECZY W PRIVATE SCHOOLS
-		[HttpGet("CopySchools")]
-        public async Task<ActionResult<bool>> CopySchools()
-        {
-            await schoolsService.AddSchoolsFromRSPOTableToMapSchoolTable();
-            return Ok();
-        }
 
 		[HttpGet]
 		[ProducesResponseType(StatusCodes.Status200OK)]
