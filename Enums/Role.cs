@@ -1,8 +1,8 @@
-﻿namespace mapa_back.Enums
+namespace mapa_back.Enums
 {
     public enum Role
     {
-        Admin = 2,
-        User = 1
+        Admin = 1,
+        User = 2
     }
 }

@@ -1,4 +1,4 @@
-﻿using mapa_back.Data;
+using mapa_back.Data;
 using mapa_back.Enums;
 using mapa_back.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -82,6 +82,112 @@ namespace mapa_back.Controllers
             {
                 return Conflict();
             }
+        }
+
+        public class UserUpdateRequest
+        {
+            public required string Email { get; set; }
+            public required string FirstName { get; set; }
+            public required string LastName { get; set; }
+            public required int IdRole { get; set; }
+            public string? Password { get; set; }
+        }
+
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userIdStr = HttpContext.Items["UserId"]?.ToString();
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            {
+                return Unauthorized();
+            }
+            User? user = await usersService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound();
+            }
+            return Ok(new
+            {
+                id = user.Id,
+                email = user.Email,
+                firstName = user.FirstName,
+                lastName = user.LastName,
+                idRole = user.IdRole
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var userIdStr = HttpContext.Items["UserId"]?.ToString();
+            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != "1") return Forbid();
+
+            var users = await usersService.GetAllUsersAsync();
+            return Ok(users.Select(u => new
+            {
+                id = u.Id,
+                email = u.Email,
+                firstName = u.FirstName,
+                lastName = u.LastName,
+                idRole = u.IdRole
+            }));
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateRequest request)
+        {
+            var userIdStr = HttpContext.Items["UserId"]?.ToString();
+            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != "1") return Forbid();
+
+            User? user = await usersService.GetUserByIdAsync(id);
+            if (user == null) return NotFound();
+
+            if (user.Email != request.Email)
+            {
+                User? existing = await usersService.GetUserByEmailAsync(request.Email);
+                if (existing != null) return Conflict("Email jest już zajęty.");
+            }
+
+            user.Email = request.Email;
+            user.FirstName = request.FirstName;
+            user.LastName = request.LastName;
+            user.IdRole = request.IdRole;
+
+            if (!string.IsNullOrEmpty(request.Password))
+            {
+                user.Password = Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
+            }
+
+            var success = await usersService.UpdateUserAsync(user);
+            if (!success) return StatusCode(500, "Wystąpił błąd podczas aktualizacji użytkownika.");
+
+            return Ok();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var userIdStr = HttpContext.Items["UserId"]?.ToString();
+            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != "1") return Forbid();
+
+            if (userIdStr == id.ToString())
+            {
+                return BadRequest("Nie możesz usunąć samego siebie.");
+            }
+
+            var success = await usersService.DeleteUserAsync(id);
+            if (!success) return NotFound();
+
+            return Ok();
         }
     }
 }

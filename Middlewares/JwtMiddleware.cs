@@ -1,4 +1,4 @@
-﻿using mapa_back.Helpers;
+using mapa_back.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -16,31 +16,31 @@ namespace mapa_back.Middlewares
         {
             // Get the token from the Authorization header
             var token = context.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-            //Console.WriteLine(context.Request.Headers["Authorization"].ToString());
             if (!string.IsNullOrEmpty(token))
             {
-
                 try
                 {
                     // Verify the token using the JwtSecurityTokenHandlerWrapper
                     var claimsPrincipal = _jwtSecurityTokenHandler.ValidateJwtToken(token);
 
-                    // Extract the user ID from the token
+                    // Extract the user ID and role from the token
                     var userId = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    var userRole = claimsPrincipal.FindFirst(ClaimTypes.Role)?.Value;
 
-                    // Store the user ID in the HttpContext items for later use
+                    // Store details in the HttpContext items for later use
                     context.Items["UserId"] = userId;
+                    context.Items["UserRole"] = userRole;
 
-                    // You can also do the for same other key which you have in JWT token.
+                    // Set the ClaimsPrincipal User for built-in authorization support
+                    context.User = claimsPrincipal;
                 }
                 catch (Exception)
                 {
-                    // If the token is invalid, throw an exception
+                    // If the token is invalid, return 401 immediately and stop execution
                     context.Response.StatusCode = 401;
                     await context.Response.WriteAsync("Unauthorized");
+                    return;
                 }
-
-
             }
             // Continue processing the request
             await next(context);

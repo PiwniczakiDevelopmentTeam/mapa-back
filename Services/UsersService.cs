@@ -1,4 +1,4 @@
-﻿using mapa_back.Data;
+using mapa_back.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace mapa_back.Services
@@ -45,7 +45,42 @@ namespace mapa_back.Services
                 await _dbContext.SaveChangesAsync();
                 return true;
             }
-            catch (Exception e)
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public async Task<List<User>> GetAllUsersAsync()
+        {
+            return await _dbContext.Users.ToListAsync();
+        }
+
+        public async Task<bool> UpdateUserAsync(User user)
+        {
+            try
+            {
+                _dbContext.Users.Update(user);
+                await _dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> DeleteUserAsync(int id)
+        {
+            try
+            {
+                var user = await _dbContext.Users.FindAsync(id);
+                if (user == null) return false;
+                _dbContext.Users.Remove(user);
+                await _dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception)
             {
                 return false;
             }
