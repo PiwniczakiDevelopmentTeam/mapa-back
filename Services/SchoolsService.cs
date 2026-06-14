@@ -407,5 +407,20 @@ namespace mapa_back.Services
 
 			}
 		}
+		public async Task<SchoolActual> GetSchoolForMap(int id)
+		{
+			SchoolActual? school = await _dbContext.SchoolsActual
+					.AsNoTracking()
+					.FirstOrDefaultAsync(s => s.Id == id);
+
+			return school;
+		}
+		public async Task<List<SchoolActual>> GetSchoolsForMap()
+		{
+			List<SchoolActual> schools = await _dbContext.SchoolsActual
+					.AsNoTracking()
+					.ToListAsync();
+			return schools;
+		}
 	}
 }

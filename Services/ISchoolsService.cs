@@ -24,5 +24,7 @@ namespace mapa_back.Services
 		Task<List<SchoolDTO>> GetMissingSchoolsInSchoolsTable(int size, int pageNumber);
         Task<int> GetMissingSchoolsInRSPOTableCount();
 		Task<int> GetMissingSchoolsInSchoolsTableCount();
+        Task<SchoolActual> GetSchoolForMap(int id);
+        Task<List<SchoolActual>> GetSchoolsForMap();
 	}
 }

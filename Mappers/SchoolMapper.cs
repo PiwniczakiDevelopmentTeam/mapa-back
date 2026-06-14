@@ -123,7 +123,65 @@ namespace mapa_back.Mappers
 				AutoUpdate = school.AutoUpdate,
 			};
 		}
+		public static object MapToMapSchoolFormat(School school)
+		{
+			var lat = school.Geography?.Y ?? 0;
+			var lon = school.Geography?.X ?? 0;
 
+			return new
+			{
+				id = school.Id,
+				latitude = lat,
+				longtitude = lon, // matches "longtitude" in script.js
+				businessData = new
+				{
+					nazwa = school.Nazwa ?? string.Empty,
+					miejscowosc = school.Miejscowosc ?? string.Empty,
+					kodPocztowy = school.KodPocztowy ?? string.Empty,
+					poczta = school.Miejscowosc ?? string.Empty,
+					wojewodztwo = school.Wojewodztwo ?? string.Empty,
+					powiat = school.Powiat ?? string.Empty,
+					gmina = school.Gmina ?? string.Empty,
+					ulica = school.Ulica ?? string.Empty,
+					numerBudynku = school.NumerBudynku ?? string.Empty,
+					numerLokalu = school.NumerLokalu ?? string.Empty,
+					numerIokalu = school.NumerLokalu ?? string.Empty, // Duplicate for the typo in script.js line 240
+					dyrektor = $"{school.DyrektorImie} {school.DyrektorNazwisko}".Trim(),
+					telefon = school.Telefon ?? string.Empty,
+					faks = string.Empty,
+					email = school.Email ?? string.Empty,
+					stronaInternetowa = school.StronaInternetowa ?? string.Empty,
+					typ = school.Typ ?? string.Empty,
+					kategoriaUczniow = school.KategoriaUczniow ?? string.Empty,
+					statusPublicznosc = school.StatusPublicznoPrawny ?? string.Empty,
+					liczbaUczniow = school.LiczbaUczniow ?? 0,
+					jezykiNauczane = Array.Empty<string>(),
+					terenySportowe = string.Empty,
+					strukturaMiejsce = string.Empty,
+					rodzajMiejscowosci = school.GminaRodzaj ?? string.Empty,
+					specyfikaPlacowki = school.SpecyfikaSzkoly ?? string.Empty,
+					rspoNumer = school.NumerRspo.ToString(),
+					regonPodmiotu = school.Regon ?? string.Empty,
+					nipPodmiotu = school.Nip ?? string.Empty,
+					dataRozpoczeciaDzialalnosci = school.DataRozpoczecia?.ToString("yyyy-MM-dd") ?? string.Empty,
+					dataLikwidacji = school.DataLikwidacji?.ToString("yyyy-MM-dd") ?? string.Empty,
+					kodTerytorialnyMiejscowosc = string.Empty,
+					kodTerytorialnyGmina = string.Empty,
+					kodTerytorialnyPowiat = string.Empty,
+					kodTerytorialnyWojewodztwo = string.Empty,
+					podmiotNadrzednyNazwa = string.Empty,
+					podmiotNadrzednyTyp = string.Empty,
+					podmiotNadrzednyRspo = string.Empty,
+					organProwadzacyNazwa = school.PodmiotProwadzacy ?? string.Empty,
+					organProwadzacyNip = string.Empty,
+					organProwadzacyRegon = string.Empty,
+					organProwadzacyTyp = school.PodmiotProwadzacyTyp ?? string.Empty,
+					organProwadzacyGmina = string.Empty,
+					organProwadzacyPowiat = string.Empty,
+					organProwadzacyWojewodztwo = string.Empty
+				}
+			};
+		}
 		private static GeographyDTO? MapGeographyToDTO(Point geography)
 		{
 			if (geography == null) return null;
