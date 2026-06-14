@@ -35,6 +35,7 @@ namespace mapa_back.Controllers
             public string Password { get; set; }
             public string FirstName { get; set; }
             public string LastName { get; set; }
+            public int? IdRole { get; set; }
         }
 
         [HttpPost("Login")]
@@ -73,7 +74,7 @@ namespace mapa_back.Controllers
                     FirstName = request.FirstName,
                     LastName = request.LastName,
                     Password = passHash,
-                    IdRole = (int)Role.User
+                    IdRole = request.IdRole ?? (int)Role.User
                 };
                 await usersService.PostSingleUser(user);
                 return Ok();
