@@ -33,6 +33,9 @@ builder.Services.AddControllers()
 
 		opt.JsonSerializerOptions.Converters.Add(
 			new GeoJsonConverterFactory());
+
+		opt.JsonSerializerOptions.Converters.Add(
+			new NullableDateOnlyJsonConverter());
 	});
 
 #endregion
