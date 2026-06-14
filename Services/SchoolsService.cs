@@ -407,40 +407,20 @@ namespace mapa_back.Services
 
 			}
 		}
-
-		public async Task AddSchoolsFromRSPOTableToMapSchoolTable()
+		public async Task<SchoolActual> GetSchoolForMap(int id)
 		{
-			int skip = 0;
-			int limit = 100;
-
-			long count = await _dbContext.SchoolsFromRSPO.CountAsync();
-
-			while (true)
-			{
-				var schools = await _dbContext.SchoolsFromRSPO
+			SchoolActual? school = await _dbContext.SchoolsActual
 					.AsNoTracking()
-					.OrderBy(x => x.Id)
-					.Skip(skip)
-					.Take(limit)
+					.FirstOrDefaultAsync(s => s.Id == id);
+
+			return school;
+		}
+		public async Task<List<SchoolActual>> GetSchoolsForMap()
+		{
+			List<SchoolActual> schools = await _dbContext.SchoolsActual
+					.AsNoTracking()
 					.ToListAsync();
-
-				if (!schools.Any())
-					break;
-
-				var actualSchools = schools
-					.Select(s => new SchoolActual(s)
-					{
-						AutoUpdate = true
-					})
-					.ToList();
-
-				await _dbContext.SchoolsActual.AddRangeAsync(actualSchools);
-				await _dbContext.SaveChangesAsync();
-
-				skip += limit;
-
-				Console.WriteLine($"Read {skip}/{count} schools");
-			}
+			return schools;
 		}
 	}
 }
