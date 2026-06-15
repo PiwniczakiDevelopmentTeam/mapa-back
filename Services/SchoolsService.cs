@@ -8,41 +8,41 @@ using Microsoft.EntityFrameworkCore;
 
 namespace mapa_back.Services
 {
-    public class SchoolsService : ISchoolsService
-    {
-        private readonly DatabaseContext _dbContext;
+	public class SchoolsService : ISchoolsService
+	{
+		private readonly DatabaseContext _dbContext;
 
-        public SchoolsService(DatabaseContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
+		public SchoolsService(DatabaseContext dbContext)
+		{
+			_dbContext = dbContext;
+		}
 
-        public async Task<long> GetSchoolsCount()
-        {
-            try
-            {
-                long schoolsNumber = await _dbContext.SchoolsActual.CountAsync();
-                return schoolsNumber;
-            }
-            catch (Exception)
-            {
-                throw new DatabaseException("Unexpected error occurred while trying to count elements in database");
-            }
-        }
-        private bool ValidatePageParametres(int pageNumber, int pageSize)
-        {
-            if (pageNumber < 1 || pageSize < 1)
-            {
-                return false;
-            }
-            return true;
-        }
-        public async Task<PagedResult<SchoolActual>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null)
-        {
-            if (!ValidatePageParametres(pageNumber, size))
-            {
-                throw new ArgumentException("Parametres not valid");
-            }
+		public async Task<long> GetSchoolsCount()
+		{
+			try
+			{
+				long schoolsNumber = await _dbContext.SchoolsActual.CountAsync();
+				return schoolsNumber;
+			}
+			catch (Exception)
+			{
+				throw new DatabaseException("Unexpected error occurred while trying to count elements in database");
+			}
+		}
+		private bool ValidatePageParametres(int pageNumber, int pageSize)
+		{
+			if (pageNumber < 1 || pageSize < 1)
+			{
+				return false;
+			}
+			return true;
+		}
+		public async Task<PagedResult<SchoolActual>> GetSchoolsPage(int size, int pageNumber, List<FilterParams>? filters = null)
+		{
+			if (!ValidatePageParametres(pageNumber, size))
+			{
+				throw new ArgumentException("Parametres not valid");
+			}
 			try
 			{
 				IQueryable<SchoolActual> query = _dbContext.SchoolsActual;
@@ -62,27 +62,28 @@ namespace mapa_back.Services
 				return result;
 			}
 			catch (SchoolServiceException)
-            {
-                throw;
-            }
-            catch(Exception)
-            {
-                throw new Exception("Unexpected error occurred while trying to get school page from database");
-            }
-        }
-        public async Task DeleteSingleSchool(int rspoId)
-        {
-            try
-            {
-                SchoolActual school = await _dbContext.SchoolsActual.FirstOrDefaultAsync(p => p.NumerRspo == rspoId) ?? throw new DatabaseException($"Couldnt find school with given Id: {rspoId}");
-                _dbContext.SchoolsActual.Remove(school);
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception)
-            {
-                throw new DatabaseException($"Unexpected eror occurred while trying to delete school with given Id: {rspoId} from database");
-            }
+			{
+				throw;
+			}
+			catch (Exception)
+			{
+				throw new Exception("Unexpected error occurred while trying to get school page from database");
+			}
 		}
+		public async Task DeleteSingleSchool(int rspoId)
+		{
+			try
+			{
+				SchoolActual school = await _dbContext.SchoolsActual.FirstOrDefaultAsync(p => p.NumerRspo == rspoId) ?? throw new DatabaseException($"Couldnt find school with given Id: {rspoId}");
+				_dbContext.SchoolsActual.Remove(school);
+				await _dbContext.SaveChangesAsync();
+			}
+			catch (Exception)
+			{
+				throw new DatabaseException($"Unexpected eror occurred while trying to delete school with given Id: {rspoId} from database");
+			}
+		}
+
 		//Auto update from RSPO
 		public async Task<bool> SyncRspoToActual()
 		{
@@ -91,7 +92,7 @@ namespace mapa_back.Services
 
 			while (true)
 			{
-				var schoolsFromRSPO = await _dbContext.SchoolsFromRSPO
+				List<SchoolFromRSPO> schoolsFromRSPO = await _dbContext.SchoolsFromRSPO
 					.OrderBy(x => x.Id)
 					.Skip(pageNumber * size)
 					.Take(size)
@@ -100,20 +101,20 @@ namespace mapa_back.Services
 				if (!schoolsFromRSPO.Any())
 					break;
 
-				var rspoIds = schoolsFromRSPO.Select(x => x.NumerRspo).ToList();
+				List<int> rspoIds = schoolsFromRSPO.Select(x => x.NumerRspo).ToList();
 
-				var actualSchools = await _dbContext.SchoolsActual
+				List<SchoolActual> actualSchools = await _dbContext.SchoolsActual
 					.Where(x => rspoIds.Contains(x.NumerRspo))
 					.ToListAsync();
 
-				var actualDict = actualSchools
+				Dictionary<int, SchoolActual> actualDict = actualSchools
 					.ToDictionary(x => x.NumerRspo);
 
-				var toInsert = new List<SchoolActual>();
+				List<SchoolActual> toInsert = new List<SchoolActual>();
 
-				foreach (var rspo in schoolsFromRSPO)
+				foreach (SchoolFromRSPO rspo in schoolsFromRSPO)
 				{
-					if (actualDict.TryGetValue(rspo.NumerRspo, out var actual))
+					if (actualDict.TryGetValue(rspo.NumerRspo, out SchoolActual? actual))
 					{
 						if (!actual.AutoUpdate)
 							continue;
@@ -142,71 +143,71 @@ namespace mapa_back.Services
 			return true;
 		}
 		public async Task DeleteManySchools(List<int> rspoIds)
-        {
-            try
-            {
-                List<SchoolActual> schools = await _dbContext.SchoolsActual.Where(school => rspoIds.Contains(school.NumerRspo)).ToListAsync();
-                if (!schools.Any())
-                {
-                    throw new DatabaseException("No schools found with the provided IDs.");
-                }
-                _dbContext.SchoolsActual.RemoveRange(schools);
-                await _dbContext.SaveChangesAsync();
-            }
-            catch(Exception)
-            {
-                throw new DatabaseException("An unexpected error occurred while deleting schools from the database.");
-            }
+		{
+			try
+			{
+				List<SchoolActual> schools = await _dbContext.SchoolsActual.Where(school => rspoIds.Contains(school.NumerRspo)).ToListAsync();
+				if (!schools.Any())
+				{
+					throw new DatabaseException("No schools found with the provided IDs.");
+				}
+				_dbContext.SchoolsActual.RemoveRange(schools);
+				await _dbContext.SaveChangesAsync();
+			}
+			catch (Exception)
+			{
+				throw new DatabaseException("An unexpected error occurred while deleting schools from the database.");
+			}
 
 		}
-       
-        public async Task<ChangedSchoolsResponse> GetChangedSchoolsList(int size, int pageNumber)
-        {
-            try
-            {
-                ChangedSchoolsResponse response = new ChangedSchoolsResponse();
-                List<School> currentSchools = _dbContext.SchoolsActual.ToList<School>();
-                List<School> archivedSchools = _dbContext.SchoolsFromRSPO.ToList<School>();
 
-                List<School> differentNewSchools = currentSchools.Except(archivedSchools).ToList();
-                List<School> differentArchivedSchools = archivedSchools.Except(currentSchools).ToList();
+		public async Task<ChangedSchoolsResponse> GetChangedSchoolsList(int size, int pageNumber)
+		{
+			try
+			{
+				ChangedSchoolsResponse response = new ChangedSchoolsResponse();
+				List<School> currentSchools = _dbContext.SchoolsActual.ToList<School>();
+				List<School> archivedSchools = _dbContext.SchoolsFromRSPO.ToList<School>();
+
+				List<School> differentNewSchools = currentSchools.Except(archivedSchools).ToList();
+				List<School> differentArchivedSchools = archivedSchools.Except(currentSchools).ToList();
 
 				List<School> notExistingSchools = differentNewSchools.Where(x => !differentArchivedSchools.Any(archived => archived.NumerRspo == x.NumerRspo)).ToList();
 				List<School> newSchools = differentArchivedSchools.Where(x => !differentNewSchools.Any(newSchool => newSchool.NumerRspo == x.NumerRspo)).ToList();
 
-                List<School> differentSchools = differentNewSchools.Where(x => differentArchivedSchools.Any(archived => archived.NumerRspo == x.NumerRspo)).ToList();
+				List<School> differentSchools = differentNewSchools.Where(x => differentArchivedSchools.Any(archived => archived.NumerRspo == x.NumerRspo)).ToList();
 				Dictionary<int, School> archivedDict = archivedSchools.ToDictionary(s => s.NumerRspo);
 
 
-                foreach (School current in differentSchools)
-                {
-                    if (archivedDict.TryGetValue(current.NumerRspo, out var archived))
-                    {
-                        response.ChangedSchools.Add(new ChangedSchool(archived, current));
-                    }
-                }
-                response.NewSchools = newSchools;
-                response.NotExistingSchools = notExistingSchools;
-                response.SchoolsCount = Math.Max(currentSchools.Count, archivedSchools.Count);
-                response.ChangedSchools.Skip(pageNumber - 1).Take(size).ToList();
+				foreach (School current in differentSchools)
+				{
+					if (archivedDict.TryGetValue(current.NumerRspo, out School? archived))
+					{
+						response.ChangedSchools.Add(new ChangedSchool(archived, current));
+					}
+				}
+				response.NewSchools = newSchools;
+				response.NotExistingSchools = notExistingSchools;
+				response.SchoolsCount = Math.Max(currentSchools.Count, archivedSchools.Count);
+				response.ChangedSchools.Skip(pageNumber - 1).Take(size).ToList();
 				return response;
 			}
-            catch (Exception)
-            {
-                throw new DatabaseException("An unexpected error occurred while trying to get data from database");
-            }
-            
-        }
+			catch (Exception)
+			{
+				throw new DatabaseException("An unexpected error occurred while trying to get data from database");
+			}
+
+		}
 		public async Task<SchoolDTO> GetSingleSchool(int rspoId)
-        {
+		{
 			if (rspoId <= 0)
 			{
 				throw new ArgumentException("Id has to be higher than 0");
 			}
 
 			SchoolActual? singleSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(s => s.NumerRspo == rspoId);
-            if (singleSchool == null) return null;
-            return SchoolMapper.MapToDTO(singleSchool);
+			if (singleSchool == null) return null;
+			return SchoolMapper.MapToDTO(singleSchool);
 		}
 
 		public async Task<SchoolDTO> GetSingleSchoolFromRSPO(int rspoId)
@@ -221,40 +222,40 @@ namespace mapa_back.Services
 			return SchoolMapper.MapToDTO(singleSchool);
 		}
 		public async Task<ChangedSchool> GetSingleChangedSchool(int rspoId)
-        {
-            School? singleSchool = _dbContext.SchoolsActual.FirstOrDefault(s => s.NumerRspo == rspoId);
-            if(singleSchool == null)
-            {
-                throw new SchoolServiceException("Couldnt find school with given Id in database");
-            }
+		{
+			School? singleSchool = _dbContext.SchoolsActual.FirstOrDefault(s => s.NumerRspo == rspoId);
+			if (singleSchool == null)
+			{
+				throw new SchoolServiceException("Couldnt find school with given Id in database");
+			}
 			School? singleSchoolFromRSPO = _dbContext.SchoolsFromRSPO.FirstOrDefault(s => s.NumerRspo == singleSchool.NumerRspo);
-            if(singleSchoolFromRSPO == null)
-            {
-                throw new SchoolServiceException($"Couldn't find matching school in RSPO Database with given rspo number: {singleSchool.NumerRspo}");
-            }
+			if (singleSchoolFromRSPO == null)
+			{
+				throw new SchoolServiceException($"Couldn't find matching school in RSPO Database with given rspo number: {singleSchool.NumerRspo}");
+			}
 
-            ChangedSchool changedSchool = new ChangedSchool(singleSchool,singleSchoolFromRSPO);
-            return changedSchool;
+			ChangedSchool changedSchool = new ChangedSchool(singleSchool, singleSchoolFromRSPO);
+			return changedSchool;
 
 		}
 
-        public async Task<bool> PostSingleSchool(SchoolActual school)
-        {
-            if(school == null)
-            {
-                throw new SchoolServiceException("School cannot be null");
-            }
-            try
-            {
-                _dbContext.SchoolsActual.Add(new SchoolActual(school));
-                await _dbContext.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                throw new DatabaseException("Couldn't add given school to database");
-            }
-        }
+		public async Task<bool> PostSingleSchool(SchoolActual school)
+		{
+			if (school == null)
+			{
+				throw new SchoolServiceException("School cannot be null");
+			}
+			try
+			{
+				_dbContext.SchoolsActual.Add(new SchoolActual(school));
+				await _dbContext.SaveChangesAsync();
+				return true;
+			}
+			catch (Exception ex)
+			{
+				throw new DatabaseException("Couldn't add given school to database");
+			}
+		}
 
 		public async Task<bool> PostManySchools(List<SchoolActual> schools)
 		{
@@ -262,17 +263,17 @@ namespace mapa_back.Services
 			{
 				throw new SchoolServiceException("School cannot be null");
 			}
-            if(schools.Count <= 0)
-            {
-                throw new SchoolServiceException("Schools cannot be empty list");
-            }
+			if (schools.Count <= 0)
+			{
+				throw new SchoolServiceException("Schools cannot be empty list");
+			}
 			try
 			{
-                foreach(var school in schools)
-                {
+				foreach (var school in schools)
+				{
 					_dbContext.SchoolsActual.Add(new SchoolActual(school));
 				}
-                await _dbContext.SaveChangesAsync();
+				await _dbContext.SaveChangesAsync();
 				return true;
 			}
 			catch (Exception ex)
@@ -293,12 +294,12 @@ namespace mapa_back.Services
 			}
 			try
 			{
-                if (!_dbContext.SchoolsActual.Any(s => s.Id == school.Id))
-                {
-                    throw new SchoolServiceException("Couldn't find school with matching Id in database");
-                }
-                School editetSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(x => x.Id == school.Id);
-                _dbContext.Entry(editetSchool).CurrentValues.SetValues(school);
+				if (!_dbContext.SchoolsActual.Any(s => s.Id == school.Id))
+				{
+					throw new SchoolServiceException("Couldn't find school with matching Id in database");
+				}
+				School editetSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(x => x.Id == school.Id);
+				_dbContext.Entry(editetSchool).CurrentValues.SetValues(school);
 				await _dbContext.SaveChangesAsync();
 				return true;
 			}
@@ -320,9 +321,9 @@ namespace mapa_back.Services
 			}
 			try
 			{
-				var schoolIds = schools.Select(s => s.Id).ToList();
+				List<int> schoolIds = schools.Select(s => s.Id).ToList();
 
-				var existingSchools = await _dbContext.SchoolsActual
+				List<SchoolActual> existingSchools = await _dbContext.SchoolsActual
 					.Where(s => schoolIds.Contains(s.Id))
 					.ToListAsync();
 
@@ -331,8 +332,8 @@ namespace mapa_back.Services
 					throw new ArgumentException("Some schools with given id do not exist in the database");
 				}
 				foreach (var school in schools)
-                {
-					 School editetSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(x => x.Id == school.Id);
+				{
+					School editetSchool = await _dbContext.SchoolsActual.FirstOrDefaultAsync(x => x.Id == school.Id);
 					_dbContext.Entry(editetSchool).CurrentValues.SetValues(school);
 				}
 				await _dbContext.SaveChangesAsync();
@@ -344,28 +345,28 @@ namespace mapa_back.Services
 			}
 		}
 
-        public async Task<List<SchoolDTO>> GetMissingSchoolsInRSPOTable(int size, int pageNumber)
-        {
-            try
-            {
-                var missingSchools = await _dbContext.SchoolsActual.Where(school => !_dbContext.SchoolsFromRSPO.Any(rspo => rspo.NumerRspo == school.NumerRspo))
-                    .Select(x => SchoolMapper.MapToDTO(x)).Skip(size * (pageNumber-1)).Take(size).ToListAsync();
-				return missingSchools;
-			}
-            catch(Exception)
-            {
-                throw new SchoolServiceException("Unexpected error occurred while trying to get missing schools from school table");
-
-			}
-        }
-
-        public async Task<int> GetMissingSchoolsInRSPOTableCount()
-        {
+		public async Task<List<SchoolDTO>> GetMissingSchoolsInRSPOTable(int size, int pageNumber)
+		{
 			try
 			{
-				var missingSchoolsCount = await _dbContext.SchoolsActual
-                    .CountAsync(school => !_dbContext.SchoolsFromRSPO
-                    .Any(rspo => rspo.NumerRspo == school.NumerRspo));
+				List<SchoolDTO> missingSchools = await _dbContext.SchoolsActual.Where(school => !_dbContext.SchoolsFromRSPO.Any(rspo => rspo.NumerRspo == school.NumerRspo))
+					.Select(x => SchoolMapper.MapToDTO(x)).Skip(size * (pageNumber - 1)).Take(size).ToListAsync();
+				return missingSchools;
+			}
+			catch (Exception)
+			{
+				throw new SchoolServiceException("Unexpected error occurred while trying to get missing schools from school table");
+
+			}
+		}
+
+		public async Task<int> GetMissingSchoolsInRSPOTableCount()
+		{
+			try
+			{
+				int missingSchoolsCount = await _dbContext.SchoolsActual
+					.CountAsync(school => !_dbContext.SchoolsFromRSPO
+					.Any(rspo => rspo.NumerRspo == school.NumerRspo));
 
 				return missingSchoolsCount;
 			}
@@ -380,8 +381,8 @@ namespace mapa_back.Services
 		{
 			try
 			{
-				var missingSchools = await _dbContext.SchoolsFromRSPO.Where(school => !_dbContext.SchoolsActual.Any(rspo => rspo.NumerRspo == school.NumerRspo))
-					.Select(x => SchoolMapper.MapToDTO(x)).Skip(size * (pageNumber-1)).Take(size).ToListAsync();
+				List<SchoolDTO> missingSchools = await _dbContext.SchoolsFromRSPO.Where(school => !_dbContext.SchoolsActual.Any(rspo => rspo.NumerRspo == school.NumerRspo))
+					.Select(x => SchoolMapper.MapToDTO(x)).Skip(size * (pageNumber - 1)).Take(size).ToListAsync();
 				return missingSchools;
 			}
 			catch (Exception)
@@ -395,7 +396,7 @@ namespace mapa_back.Services
 		{
 			try
 			{
-				var missingSchoolsCount = await _dbContext.SchoolsFromRSPO
+				int missingSchoolsCount = await _dbContext.SchoolsFromRSPO
 					.CountAsync(school => !_dbContext.SchoolsActual
 					.Any(rspo => rspo.NumerRspo == school.NumerRspo));
 

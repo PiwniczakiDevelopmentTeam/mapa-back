@@ -82,6 +82,4 @@ namespace mapa_back.Data
 			PodmiotProwadzacyTyp = source.PodmiotProwadzacyTyp;
 		}
 	}
-
-
 }

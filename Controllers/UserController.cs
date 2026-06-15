@@ -8,193 +8,193 @@ using System.Text;
 
 namespace mapa_back.Controllers
 {
-    [Route("api/user")]
-    [ApiController]
-    public class UserController : ControllerBase
-    {
-        private readonly IUsersService usersService;
-        private SHA256 sha256;
-        private JwtHelper jwt;
+	[Route("api/user")]
+	[ApiController]
+	public class UserController : ControllerBase
+	{
+		private readonly IUsersService usersService;
+		private SHA256 sha256;
+		private JwtHelper jwt;
 
-        public UserController(IUsersService usersService)
-        {
-            sha256 = SHA256.Create();
-            jwt = new JwtHelper();
-            this.usersService = usersService;
-        }
+		public UserController(IUsersService usersService)
+		{
+			sha256 = SHA256.Create();
+			jwt = new JwtHelper();
+			this.usersService = usersService;
+		}
 
-        public class LoginRequest
-        {
-            public string Email { get; set; }
-            public string Password { get; set; }
-        }
+		public class LoginRequest
+		{
+			public string Email { get; set; }
+			public string Password { get; set; }
+		}
 
-        public class RegisterRequest
-        {
-            public string Email { get; set; }
-            public string Password { get; set; }
-            public string FirstName { get; set; }
-            public string LastName { get; set; }
-            public int? IdRole { get; set; }
-        }
+		public class RegisterRequest
+		{
+			public string Email { get; set; }
+			public string Password { get; set; }
+			public string FirstName { get; set; }
+			public string LastName { get; set; }
+			public int? IdRole { get; set; }
+		}
 
-        [HttpPost("Login")]
-        [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
-        {
-            User user = await usersService.GetUserByEmailAsync(request.Email);
-            if (user != null)
-            {
-                if (user.Password == Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password))))
-                {
-                    string token = jwt.GenerateJwtToken(user.Id.ToString(), user.IdRole.ToString());
-                    return Ok(token);
-                }
-                else
-                {
-                    return Unauthorized();
-                }
-            }
-            else
-            {
-                return NotFound();
-            }
-        }
+		[HttpPost("Login")]
+		[AllowAnonymous]
+		public async Task<IActionResult> Login([FromBody] LoginRequest request)
+		{
+			User user = await usersService.GetUserByEmailAsync(request.Email);
+			if (user != null)
+			{
+				if (user.Password == Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password))))
+				{
+					string token = jwt.GenerateJwtToken(user.Id.ToString(), user.IdRole.ToString());
+					return Ok(token);
+				}
+				else
+				{
+					return Unauthorized();
+				}
+			}
+			else
+			{
+				return NotFound();
+			}
+		}
 
-        [HttpPost("adduser")]
-        public async Task<IActionResult> AddUser([FromBody] RegisterRequest request)
-        {
-            var userIdStr = HttpContext.Items["UserId"]?.ToString();
-            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+		[HttpPost("adduser")]
+		public async Task<IActionResult> AddUser([FromBody] RegisterRequest request)
+		{
+			string? userIdStr = HttpContext.Items["UserId"]?.ToString();
+			if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
 
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != "1") return Forbid();
+			string? userRole = HttpContext.Items["UserRole"]?.ToString();
+			if (userRole != "1") return Forbid();
 
-            User user = await usersService.GetUserByEmailAsync(request.Email);
-            string passHash = Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
-            if (user == null)
-            {
-                user = new User()
-                {
-                    Email = request.Email,
-                    FirstName = request.FirstName,
-                    LastName = request.LastName,
-                    Password = passHash,
-                    IdRole = request.IdRole ?? (int)Role.User
-                };
-                await usersService.PostSingleUser(user);
-                return Ok();
-            }
-            else
-            {
-                return Conflict();
-            }
-        }
+			User user = await usersService.GetUserByEmailAsync(request.Email);
+			string passHash = Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
+			if (user == null)
+			{
+				user = new User()
+				{
+					Email = request.Email,
+					FirstName = request.FirstName,
+					LastName = request.LastName,
+					Password = passHash,
+					IdRole = request.IdRole ?? (int)Role.User
+				};
+				await usersService.PostSingleUser(user);
+				return Ok();
+			}
+			else
+			{
+				return Conflict();
+			}
+		}
 
-        public class UserUpdateRequest
-        {
-            public required string Email { get; set; }
-            public required string FirstName { get; set; }
-            public required string LastName { get; set; }
-            public required int IdRole { get; set; }
-            public string? Password { get; set; }
-        }
+		public class UserUpdateRequest
+		{
+			public required string Email { get; set; }
+			public required string FirstName { get; set; }
+			public required string LastName { get; set; }
+			public required int IdRole { get; set; }
+			public string? Password { get; set; }
+		}
 
-        [HttpGet("me")]
-        public async Task<IActionResult> GetCurrentUser()
-        {
-            var userIdStr = HttpContext.Items["UserId"]?.ToString();
-            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
-            {
-                return Unauthorized();
-            }
-            User? user = await usersService.GetUserByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound();
-            }
-            return Ok(new
-            {
-                id = user.Id,
-                email = user.Email,
-                firstName = user.FirstName,
-                lastName = user.LastName,
-                idRole = user.IdRole
-            });
-        }
+		[HttpGet("me")]
+		public async Task<IActionResult> GetCurrentUser()
+		{
+			string? userIdStr = HttpContext.Items["UserId"]?.ToString();
+			if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+			{
+				return Unauthorized();
+			}
+			User? user = await usersService.GetUserByIdAsync(userId);
+			if (user == null)
+			{
+				return NotFound();
+			}
+			return Ok(new
+			{
+				id = user.Id,
+				email = user.Email,
+				firstName = user.FirstName,
+				lastName = user.LastName,
+				idRole = user.IdRole
+			});
+		}
 
-        [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
-        {
-            var userIdStr = HttpContext.Items["UserId"]?.ToString();
-            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+		[HttpGet]
+		public async Task<IActionResult> GetAllUsers()
+		{
+			string? userIdStr = HttpContext.Items["UserId"]?.ToString();
+			if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
 
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != "1") return Forbid();
+			string? userRole = HttpContext.Items["UserRole"]?.ToString();
+			if (userRole != "1") return Forbid();
 
-            var users = await usersService.GetAllUsersAsync();
-            return Ok(users.Select(u => new
-            {
-                id = u.Id,
-                email = u.Email,
-                firstName = u.FirstName,
-                lastName = u.LastName,
-                idRole = u.IdRole
-            }));
-        }
+			List<User> users = await usersService.GetAllUsersAsync();
+			return Ok(users.Select(u => new
+			{
+				id = u.Id,
+				email = u.Email,
+				firstName = u.FirstName,
+				lastName = u.LastName,
+				idRole = u.IdRole
+			}));
+		}
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateRequest request)
-        {
-            var userIdStr = HttpContext.Items["UserId"]?.ToString();
-            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+		[HttpPut("{id}")]
+		public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateRequest request)
+		{
+			string? userIdStr = HttpContext.Items["UserId"]?.ToString();
+			if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
 
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != "1") return Forbid();
+			string? userRole = HttpContext.Items["UserRole"]?.ToString();
+			if (userRole != "1") return Forbid();
 
-            User? user = await usersService.GetUserByIdAsync(id);
-            if (user == null) return NotFound();
+			User? user = await usersService.GetUserByIdAsync(id);
+			if (user == null) return NotFound();
 
-            if (user.Email != request.Email)
-            {
-                User? existing = await usersService.GetUserByEmailAsync(request.Email);
-                if (existing != null) return Conflict("Email jest już zajęty.");
-            }
+			if (user.Email != request.Email)
+			{
+				User? existing = await usersService.GetUserByEmailAsync(request.Email);
+				if (existing != null) return Conflict("Email jest już zajęty.");
+			}
 
-            user.Email = request.Email;
-            user.FirstName = request.FirstName;
-            user.LastName = request.LastName;
-            user.IdRole = request.IdRole;
+			user.Email = request.Email;
+			user.FirstName = request.FirstName;
+			user.LastName = request.LastName;
+			user.IdRole = request.IdRole;
 
-            if (!string.IsNullOrEmpty(request.Password))
-            {
-                user.Password = Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
-            }
+			if (!string.IsNullOrEmpty(request.Password))
+			{
+				user.Password = Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
+			}
 
-            var success = await usersService.UpdateUserAsync(user);
-            if (!success) return StatusCode(500, "Wystąpił błąd podczas aktualizacji użytkownika.");
+			bool success = await usersService.UpdateUserAsync(user);
+			if (!success) return StatusCode(500, "Wystąpił błąd podczas aktualizacji użytkownika.");
 
-            return Ok();
-        }
+			return Ok();
+		}
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var userIdStr = HttpContext.Items["UserId"]?.ToString();
-            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+		[HttpDelete("{id}")]
+		public async Task<IActionResult> DeleteUser(int id)
+		{
+			string? userIdStr = HttpContext.Items["UserId"]?.ToString();
+			if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
 
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != "1") return Forbid();
+			string? userRole = HttpContext.Items["UserRole"]?.ToString();
+			if (userRole != "1") return Forbid();
 
-            if (userIdStr == id.ToString())
-            {
-                return BadRequest("Nie możesz usunąć samego siebie.");
-            }
+			if (userIdStr == id.ToString())
+			{
+				return BadRequest("Nie możesz usunąć samego siebie.");
+			}
 
-            var success = await usersService.DeleteUserAsync(id);
-            if (!success) return NotFound();
+			bool success = await usersService.DeleteUserAsync(id);
+			if (!success) return NotFound();
 
-            return Ok();
-        }
-    }
+			return Ok();
+		}
+	}
 }

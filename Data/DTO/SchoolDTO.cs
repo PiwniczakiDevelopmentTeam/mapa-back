@@ -2,8 +2,8 @@
 
 namespace mapa_back.Models.DTO
 {
-    public class SchoolDTO
-    {
+	public class SchoolDTO
+	{
 		public int Id { get; set; }
 		public int NumerRspo { get; set; }
 		public string? Typ { get; set; }
@@ -22,19 +22,19 @@ namespace mapa_back.Models.DTO
 		public string? Telefon { get; set; }
 		public string? StronaInternetowa { get; set; }
 		public string? DyrektorImie { get; set; }
-        public string? DyrektorNazwisko { get; set; }
+		public string? DyrektorNazwisko { get; set; }
 		public string? Nip { get; set; }
 		public string? Regon { get; set; }
 		public DateOnly? DataRozpoczecia { get; set; }
 		public DateOnly? DataZalozenia { get; set; }
-        public DateOnly? DataZakonczenia { get; set; }
-        public DateOnly? DataLikwidacji { get; set; }
+		public DateOnly? DataZakonczenia { get; set; }
+		public DateOnly? DataLikwidacji { get; set; }
 		public int? LiczbaUczniow { get; set; }
 		public string? KategoriaUczniow { get; set; }
 		public string? SpecyfikaSzkoly { get; set; }
 		public string? PodmiotProwadzacyTyp { get; set; }
-        public string? PodmiotProwadzacyNazwa { get; set; }
-        public GeographyDTO? Geography { get; set; }
+		public string? PodmiotProwadzacyNazwa { get; set; }
+		public GeographyDTO? Geography { get; set; }
 		public bool AutoUpdate { get; set; }
-    }
+	}
 }

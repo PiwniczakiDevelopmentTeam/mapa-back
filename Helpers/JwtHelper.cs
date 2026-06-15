@@ -5,75 +5,61 @@ using System.Text;
 
 namespace mapa_back.Helpers
 {
-    public class JwtHelper
-    {
-        // Create an instance of JwtSecurityTokenHandler
-        private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+	public class JwtHelper
+	{
+		private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
 
-        public JwtHelper()
-        {
-            _jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
-        }
+		public JwtHelper()
+		{
+			_jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+		}
 
-        // Generate a JWT token based on user ID and role
-        public string GenerateJwtToken(string userId, string role)
-        {
-            // Retrieve the JWT secret from environment variables and encode it
-            var key = Encoding.ASCII.GetBytes(Environment.GetEnvironmentVariable("JWT_SECRET")!);
+		public string GenerateJwtToken(string userId, string role)
+		{
+			byte[] key = Encoding.ASCII.GetBytes(Environment.GetEnvironmentVariable("JWT_SECRET")!);
 
-            // Create claims for user identity and role
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, userId),
-                new Claim(ClaimTypes.Role, role)
-            };
+			List<Claim> claims = new List<Claim>
+			{
+				new Claim(ClaimTypes.NameIdentifier, userId),
+				new Claim(ClaimTypes.Role, role)
+			};
 
-            // Create an identity from the claims
-            var identity = new ClaimsIdentity(claims);
+			var identity = new ClaimsIdentity(claims);
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
+				Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
+				Subject = identity,
+				Expires = DateTime.UtcNow.AddMinutes(30),
+				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+			};
 
-            // Describe the token settings
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
-                Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
-                Subject = identity,
-                Expires = DateTime.UtcNow.AddMinutes(30),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
+			JwtSecurityToken token = _jwtSecurityTokenHandler.CreateJwtSecurityToken(tokenDescriptor);
 
-            // Create a JWT security token
-            var token = _jwtSecurityTokenHandler.CreateJwtSecurityToken(tokenDescriptor);
+			return _jwtSecurityTokenHandler.WriteToken(token);
+		}
 
-            // Write the token as a string and return it
-            return _jwtSecurityTokenHandler.WriteToken(token);
-        }
+		public ClaimsPrincipal ValidateJwtToken(string token)
+		{
+			byte[] key = Encoding.ASCII.GetBytes(Environment.GetEnvironmentVariable("JWT_SECRET")!);
 
-        // Validate a JWT token
-        public ClaimsPrincipal ValidateJwtToken(string token)
-        {
-            // Retrieve the JWT secret from environment variables and encode it
-            var key = Encoding.ASCII.GetBytes(Environment.GetEnvironmentVariable("JWT_SECRET")!);
+			try
+			{
+				var tokenHandler = new JwtSecurityTokenHandler();
+				ClaimsPrincipal claimsPrincipal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+				{
+					ValidateIssuerSigningKey = true,
+					ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
+					ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
+					IssuerSigningKey = new SymmetricSecurityKey(key)
+				}, out SecurityToken validatedToken);
 
-            try
-            {
-                // Create a token handler and validate the token
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var claimsPrincipal = tokenHandler.ValidateToken(token, new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
-                    ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
-                    IssuerSigningKey = new SymmetricSecurityKey(key)
-                }, out SecurityToken validatedToken);
-
-                // Return the claims principal
-                return claimsPrincipal;
-            }
-            catch (SecurityTokenExpiredException)
-            {
-                // Handle token expiration
-                throw new ApplicationException("Token has expired.");
-            }
-        }
-    }
+				return claimsPrincipal;
+			}
+			catch (SecurityTokenExpiredException)
+			{
+				throw new ApplicationException("Token has expired.");
+			}
+		}
+	}
 }

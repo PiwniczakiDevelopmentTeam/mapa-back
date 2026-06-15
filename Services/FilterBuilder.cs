@@ -13,33 +13,33 @@ namespace mapa_back.Services
 				if (string.IsNullOrWhiteSpace(filter.field) || filter.value == null)
 					continue;
 
-				var parameter = Expression.Parameter(typeof(T), "x");
+				ParameterExpression parameter = Expression.Parameter(typeof(T), "x");
 
-				var propertyInfo = typeof(T).GetProperty(filter.field, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+				PropertyInfo? propertyInfo = typeof(T).GetProperty(filter.field, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 				if (propertyInfo == null)
 					continue;
 
-				var property = Expression.Property(parameter, propertyInfo);
+				MemberExpression property = Expression.Property(parameter, propertyInfo);
 				Expression? comparison;
 
 				if (propertyInfo.PropertyType == typeof(string))
 				{
-					var toLower = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes);
-					var containsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) });
+					MethodInfo? toLower = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes);
+					MethodInfo? containsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) });
 
-					var left = Expression.Call(property, toLower!);
-					var right = Expression.Constant(filter.value.ToString()!.ToLower());
+					MethodCallExpression left = Expression.Call(property, toLower!);
+					ConstantExpression right = Expression.Constant(filter.value.ToString()!.ToLower());
 
-					var notNull = Expression.NotEqual(property, Expression.Constant(null, typeof(string)));
+					BinaryExpression notNull = Expression.NotEqual(property, Expression.Constant(null, typeof(string)));
 
 					if (filter.field.Equals("nazwa", StringComparison.OrdinalIgnoreCase))
 					{
-						var contains = Expression.Call(left, containsMethod!, right);
+						MethodCallExpression contains = Expression.Call(left, containsMethod!, right);
 						comparison = Expression.AndAlso(notNull, contains);
 					}
 					else
 					{
-						var equal = Expression.Equal(left, right);
+						BinaryExpression equal = Expression.Equal(left, right);
 						comparison = Expression.AndAlso(notNull, equal);
 					}
 				}
@@ -47,8 +47,8 @@ namespace mapa_back.Services
 				{
 					try
 					{
-						var typedValue = Convert.ChangeType(filter.value, propertyInfo.PropertyType);
-						var constant = Expression.Constant(typedValue);
+						object typedValue = Convert.ChangeType(filter.value, propertyInfo.PropertyType);
+						ConstantExpression constant = Expression.Constant(typedValue);
 						comparison = Expression.Equal(property, constant);
 					}
 					catch
@@ -57,7 +57,7 @@ namespace mapa_back.Services
 					}
 				}
 
-				var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
+				Expression<Func<T, bool>> lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
 				query = query.Where(lambda);
 			}
 

@@ -67,11 +67,11 @@ builder.Services.AddOptions<RspoApiOptions>()
 
 builder.Services.AddHttpClient<IRSPOApiService, RSPOApiService>((sp, client) =>
 {
-	var cfg = sp.GetRequiredService<IOptions<RspoApiOptions>>().Value;
+	RspoApiOptions cfg = sp.GetRequiredService<IOptions<RspoApiOptions>>().Value;
 
 	client.BaseAddress = new Uri(cfg.BaseUrl.TrimEnd('/'));
 
-	var credentials = Convert.ToBase64String(
+	string credentials = Convert.ToBase64String(
 		Encoding.UTF8.GetBytes($"{cfg.Username}:{cfg.Password}")
 	);
 
@@ -111,7 +111,7 @@ builder.Services.AddSwaggerGen(c =>
 
 #region DB
 
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
+string connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
 	?? throw new InvalidOperationException("DB missing");
 
 builder.Services.AddDbContext<DatabaseContext>(opt =>
@@ -134,17 +134,17 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
+	options.AddPolicy("AllowAll", policy =>
+	{
+		policy.AllowAnyOrigin()
+			  .AllowAnyMethod()
+			  .AllowAnyHeader();
+	});
 });
 
 builder.Host.UseSystemd();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 #region PIPELINE (FIX ORDER)
 

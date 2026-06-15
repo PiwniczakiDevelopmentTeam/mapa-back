@@ -12,30 +12,29 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Text.Json;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace mapa_back.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class SchoolsController : ControllerBase
-    {
-        private readonly DatabaseContext databaseContext;
-        private readonly ISchoolsService schoolsService;
+	[Route("api/[controller]")]
+	[ApiController]
+	public class SchoolsController : ControllerBase
+	{
+		private readonly DatabaseContext databaseContext;
+		private readonly ISchoolsService schoolsService;
 		private readonly IServiceProvider serviceProvider;
 		private readonly RSPOProgressTracker progressTracker;
-        public SchoolsController(DatabaseContext context, ISchoolsService schoolsService, RSPOProgressTracker progressTracker, IServiceProvider serviceProvider)
-        {
-            this.databaseContext = context;
-            this.schoolsService = schoolsService;
+		public SchoolsController(DatabaseContext context, ISchoolsService schoolsService, RSPOProgressTracker progressTracker, IServiceProvider serviceProvider)
+		{
+			this.databaseContext = context;
+			this.schoolsService = schoolsService;
 			this.progressTracker = progressTracker;
 			this.serviceProvider = serviceProvider;
 		}
 
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [HttpGet("GetDataFromRSPO")]
-        public async Task<ActionResult> GetDataFromRSPO([FromServices] IRSPOApiService service)
-        {
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[HttpGet("GetDataFromRSPO")]
+		public async Task<ActionResult> GetDataFromRSPO([FromServices] IRSPOApiService service)
+		{
 			_ = Task.Run(async () =>
 			{
 				using var scope = serviceProvider.CreateScope();
@@ -58,31 +57,31 @@ namespace mapa_back.Controllers
 		}
 
 		[HttpGet("GetSchoolsCount")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
-        public async Task<ActionResult<long>> GetSchoolsCount()
-        {
-            try
-            {
-                long schoolsCount = await schoolsService.GetSchoolsCount();
-                if(schoolsCount > 0)
-                {
-                    return Ok(schoolsCount);
-                }
-                return NotFound();
-            }
-            catch (DatabaseException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to get schools count from database. Try again later");
-            }
-        }
+		public async Task<ActionResult<long>> GetSchoolsCount()
+		{
+			try
+			{
+				long schoolsCount = await schoolsService.GetSchoolsCount();
+				if (schoolsCount > 0)
+				{
+					return Ok(schoolsCount);
+				}
+				return NotFound();
+			}
+			catch (DatabaseException ex)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+			}
+			catch (Exception)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to get schools count from database. Try again later");
+			}
+		}
 
 		[HttpPost("GetSingleSchool")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
@@ -123,128 +122,128 @@ namespace mapa_back.Controllers
 		}
 
 		[HttpPost("GetSchoolPage")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
-        public async Task<ActionResult<PagedResult<School>>> GetSchoolPage(int size, int pageNumber, List<FilterParams>? filters = null)
-        {
-            try
-            {
+		public async Task<ActionResult<PagedResult<School>>> GetSchoolPage(int size, int pageNumber, List<FilterParams>? filters = null)
+		{
+			try
+			{
 				PagedResult<SchoolActual> schoolsPage = await schoolsService.GetSchoolsPage(size, pageNumber, filters);
-                if (schoolsPage.Items.Count > 0)
-                {
-                    return Ok(schoolsPage);
-                }
-                return NotFound();
-            }
-            catch(SchoolServiceException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to get schools count from database. Try again later");
-            }
-        }
+				if (schoolsPage.Items.Count > 0)
+				{
+					return Ok(schoolsPage);
+				}
+				return NotFound();
+			}
+			catch (SchoolServiceException ex)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+			}
+			catch (ArgumentException ex)
+			{
+				return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
+			}
+			catch (Exception)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to get schools count from database. Try again later");
+			}
+		}
 
-        [HttpDelete("DeleteSchool")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<string>> DeleteSingleSchool(int rspoId)
-        {
-            try
-            {
-                if (rspoId <= 0)
-                {
-                    return BadRequest("Invalid school id");
-                }
-                await schoolsService.DeleteSingleSchool(rspoId);
-                return Ok($"school with id: {rspoId} deleted");           
-            }
-            catch(DatabaseException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to delete single school. Try again later");
-            }
+		[HttpDelete("DeleteSchool")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+		public async Task<ActionResult<string>> DeleteSingleSchool(int rspoId)
+		{
+			try
+			{
+				if (rspoId <= 0)
+				{
+					return BadRequest("Invalid school id");
+				}
+				await schoolsService.DeleteSingleSchool(rspoId);
+				return Ok($"school with id: {rspoId} deleted");
+			}
+			catch (DatabaseException ex)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+			}
+			catch (Exception)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to delete single school. Try again later");
+			}
 
-        }
+		}
 
-        [HttpDelete("DeleteManySchools")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<string>> DeleteManySchools(List<int> rspoIds)
-        {
-            try
-            {
-                if (rspoIds.Count <= 0)
-                {
-                    return BadRequest("ID list empty");
-                }
-                var invalidIds = rspoIds.Where(id => id <= 0).ToList();
-                if (invalidIds.Any())
-                {
-                    return BadRequest($"The following IDs are invalid: {string.Join(", ", invalidIds)}");
-                }
-                await schoolsService.DeleteManySchools(rspoIds);
-                return Ok($"school with given ids deleted");
-            }
-            catch (DatabaseException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to delete single school. Try again later");
-            }
-        }
-        [HttpGet("GetChanges")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ChangedSchoolsResponse>> GetChanges(int size, int page)
-        {
-            try
-            {
+		[HttpDelete("DeleteManySchools")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+		public async Task<ActionResult<string>> DeleteManySchools(List<int> rspoIds)
+		{
+			try
+			{
+				if (rspoIds.Count <= 0)
+				{
+					return BadRequest("ID list empty");
+				}
+				var invalidIds = rspoIds.Where(id => id <= 0).ToList();
+				if (invalidIds.Any())
+				{
+					return BadRequest($"The following IDs are invalid: {string.Join(", ", invalidIds)}");
+				}
+				await schoolsService.DeleteManySchools(rspoIds);
+				return Ok($"school with given ids deleted");
+			}
+			catch (DatabaseException ex)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+			}
+			catch (Exception)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to delete single school. Try again later");
+			}
+		}
+		[HttpGet("GetChanges")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+		public async Task<ActionResult<ChangedSchoolsResponse>> GetChanges(int size, int page)
+		{
+			try
+			{
 				ChangedSchoolsResponse response = await schoolsService.GetChangedSchoolsList(size, page);
-                if (response.ChangedSchools.Any() || response.NewSchools.Any() || response.NotExistingSchools.Any())
-                {
-                    return Ok(response);
-                }
-                return NoContent();
-            }
-            catch (ArgumentException ex)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
-            }
-            catch (SchoolServiceException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-            }
-            catch (DatabaseException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+				if (response.ChangedSchools.Any() || response.NewSchools.Any() || response.NotExistingSchools.Any())
+				{
+					return Ok(response);
+				}
+				return NoContent();
+			}
+			catch (ArgumentException ex)
+			{
+				return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
+			}
+			catch (SchoolServiceException ex)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+			}
+			catch (DatabaseException ex)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
 
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to get changes. Try again later");
-            }
-        }
+			}
+			catch (Exception)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred while trying to get changes. Try again later");
+			}
+		}
 
 		[HttpGet("GetSingleSchoolWithChanges")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
@@ -312,7 +311,7 @@ namespace mapa_back.Controllers
 		{
 			try
 			{
-                List<SchoolActual> schools = schoolsDTO.Select(x => SchoolMapper.MapToActualSchool(x)).ToList();
+				List<SchoolActual> schools = schoolsDTO.Select(x => SchoolMapper.MapToActualSchool(x)).ToList();
 				bool response = await schoolsService.PostManySchools(schools);
 				if (response == false)
 				{
