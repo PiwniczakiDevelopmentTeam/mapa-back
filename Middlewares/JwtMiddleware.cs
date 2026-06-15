@@ -42,6 +42,26 @@ namespace mapa_back.Middlewares
                     return;
                 }
             }
+            // Check if the endpoint is a controller action and requires authentication
+            var endpoint = context.GetEndpoint();
+            if (endpoint != null)
+            {
+                var actionDescriptor = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
+                if (actionDescriptor != null)
+                {
+                    var allowAnonymous = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Authorization.IAllowAnonymous>();
+                    if (allowAnonymous == null)
+                    {
+                        if (context.Items["UserId"] == null)
+                        {
+                            context.Response.StatusCode = 401;
+                            await context.Response.WriteAsync("Unauthorized");
+                            return;
+                        }
+                    }
+                }
+            }
+
             // Continue processing the request
             await next(context);
         }

@@ -61,9 +61,15 @@ namespace mapa_back.Controllers
             }
         }
 
-        /*[HttpPost("Register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        [HttpPost("adduser")]
+        public async Task<IActionResult> AddUser([FromBody] RegisterRequest request)
         {
+            var userIdStr = HttpContext.Items["UserId"]?.ToString();
+            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != "1") return Forbid();
+
             User user = await usersService.GetUserByEmailAsync(request.Email);
             string passHash = Convert.ToHexString(sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
             if (user == null)
@@ -83,7 +89,7 @@ namespace mapa_back.Controllers
             {
                 return Conflict();
             }
-        }*/
+        }
 
         public class UserUpdateRequest
         {

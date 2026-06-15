@@ -156,6 +156,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+
 app.UseCors("AllowAll");
 
 app.Use(async (context, next) =>
@@ -169,9 +171,9 @@ app.Use(async (context, next) =>
 	await next();
 });
 
+app.UseMiddleware<JwtMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseMiddleware<JwtMiddleware>();
 
 app.MapControllers();
 

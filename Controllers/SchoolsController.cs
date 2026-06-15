@@ -6,6 +6,7 @@ using mapa_back.Mappers;
 using mapa_back.Models;
 using mapa_back.Models.DTO;
 using mapa_back.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -520,6 +521,7 @@ namespace mapa_back.Controllers
 
 
 		[HttpGet]
+		[AllowAnonymous]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		public async Task<IActionResult> GetPublicSchools()
 		{
@@ -541,6 +543,7 @@ namespace mapa_back.Controllers
 		}
 
 		[HttpGet("{id}")]
+		[AllowAnonymous]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		public async Task<IActionResult> GetPublicSchool(int id)
