@@ -61,7 +61,7 @@ namespace mapa_back.Controllers
             }
         }
 
-        [HttpPost("Register")]
+        /*[HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             User user = await usersService.GetUserByEmailAsync(request.Email);
@@ -83,7 +83,7 @@ namespace mapa_back.Controllers
             {
                 return Conflict();
             }
-        }
+        }*/
 
         public class UserUpdateRequest
         {
